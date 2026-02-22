@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -27,21 +27,21 @@ export default function Login() {
   };
 
   return (
-    <div className="layout" style={{ maxWidth: 400, paddingTop: 80 }}>
-      <div className="card">
-        <h1 style={{ marginTop: 0 }}>KPSS Admin</h1>
-        <p style={{ color: '#64748b', marginBottom: 24 }}>Yönetim paneline giriş yapın</p>
-        <form onSubmit={handleSubmit}>
-          {error && <div className="msg error">{error}</div>}
-          <div className="form-row">
-            <label>E-posta</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" style={{ width: '100%' }} />
+    <div className="flex min-h-screen items-center justify-center bg-bgray-50 px-4 py-16 dark:bg-darkblack-500">
+      <div className="card-bankco w-full max-w-md">
+        <h1 className="mb-1 text-2xl font-bold text-bgray-900 dark:text-white">KPSS Admin</h1>
+        <p className="mb-6 text-sm text-bgray-600 dark:text-bgray-50">Yönetim paneline giriş yapın</p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && <div className="msg-error">{error}</div>}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-bgray-700 dark:text-bgray-50">E-posta</label>
+            <input className="input-field w-full" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
           </div>
-          <div className="form-row">
-            <label>Şifre</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" style={{ width: '100%' }} />
+          <div>
+            <label className="mb-1 block text-sm font-medium text-bgray-700 dark:text-bgray-50">Şifre</label>
+            <input className="input-field w-full" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
           </div>
-          <button type="submit" disabled={loading} style={{ width: '100%', marginTop: 8 }}>
+          <button type="submit" disabled={loading} className="btn-primary w-full">
             {loading ? 'Giriş yapılıyor…' : 'Giriş yap'}
           </button>
         </form>

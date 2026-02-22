@@ -1,5 +1,9 @@
 # Proje kökü .gitignore
 node_modules/
+.env
+*.env
+!*.env.example
+admin/dist/
 
 # İç içe repo – bu klasörü atla (içindeki .git yüzünden sorun çıkıyor)
 kpss-bilgi-kartlari/

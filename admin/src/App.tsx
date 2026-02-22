@@ -14,7 +14,7 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="layout" style={{ paddingTop: 48, textAlign: 'center' }}>
+      <div className="flex min-h-screen items-center justify-center bg-bgray-50 text-bgray-700 dark:bg-darkblack-500 dark:text-bgray-50">
         Yükleniyor…
       </div>
     );
@@ -31,8 +31,8 @@ export default function App() {
 
   if (!isAdmin) {
     return (
-      <div className="layout" style={{ paddingTop: 48, textAlign: 'center' }}>
-        <p>Bu panele erişim yetkiniz yok. Sadece admin kullanıcılar giriş yapabilir.</p>
+      <div className="flex min-h-screen items-center justify-center bg-bgray-50 px-4 text-center dark:bg-darkblack-500">
+        <p className="text-bgray-700 dark:text-bgray-50">Bu panele erişim yetkiniz yok. Sadece admin kullanıcılar giriş yapabilir.</p>
       </div>
     );
   }
