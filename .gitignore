@@ -1,0 +1,5 @@
+# Proje kökü .gitignore
+node_modules/
+
+# İç içe repo – bu klasörü atla (içindeki .git yüzünden sorun çıkıyor)
+kpss-bilgi-kartlari/

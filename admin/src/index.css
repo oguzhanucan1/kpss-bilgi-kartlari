@@ -1,0 +1,20 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; background: #f1f5f9; color: #1e293b; }
+a { color: #7c3aed; text-decoration: none; }
+a:hover { text-decoration: underline; }
+input, textarea, select { font: inherit; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; }
+button { font: inherit; cursor: pointer; padding: 8px 16px; border-radius: 8px; border: none; background: #7c3aed; color: #fff; }
+button:hover { background: #6d28d9; }
+button.secondary { background: #e2e8f0; color: #475569; }
+button.danger { background: #dc2626; }
+.layout { max-width: 1200px; margin: 0 auto; padding: 24px; }
+.nav { display: flex; gap: 16px; margin-bottom: 24px; padding: 16px; background: #fff; border-radius: 12px; }
+.card { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e2e8f0; }
+th { font-weight: 600; color: #475569; }
+.form-row { margin-bottom: 16px; }
+.form-row label { display: block; margin-bottom: 6px; font-weight: 500; }
+.msg { padding: 12px; border-radius: 8px; margin-bottom: 16px; }
+.msg.error { background: #fef2f2; color: #dc2626; }
+.msg.success { background: #f0fdf4; color: #059669; }

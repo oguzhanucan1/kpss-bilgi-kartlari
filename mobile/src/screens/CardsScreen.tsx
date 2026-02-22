@@ -1,0 +1,245 @@
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { View, StyleSheet, Dimensions, FlatList, RefreshControl, type ListRenderItemInfo } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Text, IconButton, ActivityIndicator, Button } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { MainStackParamList } from '../navigation/types';
+import { APP_THEME } from '../theme';
+
+type FlashCard = { id: string; title: string | null; front_text: string; back_text: string };
+type Props = NativeStackScreenProps<MainStackParamList, 'Cards'>;
+
+const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
+const SWIPE_THRESHOLD = 30;
+
+function shuffle<T>(arr: T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+export default function CardsScreen({ route, navigation }: Props) {
+  const insets = useSafeAreaInsets();
+  const { session } = useAuth();
+  const userId = session?.user?.id;
+  const { topicId, topicName, initialFlashCardId } = route.params;
+  const [cards, setCards] = useState<FlashCard[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const listRef = useRef<FlatList>(null);
+  const onEndReachedCalled = useRef(false);
+  const scrollStartY = useRef(0);
+  const userDidDrag = useRef(false);
+  const hasScrolledToInitial = useRef(false);
+  const viewStartTimeRef = useRef<number>(Date.now());
+  const cardsRef = useRef<FlashCard[]>([]);
+  const recordCardViewRef = useRef<(id: string, sec: number) => Promise<void>>(async () => {});
+  const currentIndexRef = useRef(0);
+  const cardHeight = SCREEN_HEIGHT;
+
+  currentIndexRef.current = currentIndex;
+
+  const recordCardView = useCallback(async (flashCardId: string, durationSeconds: number) => {
+    if (!supabase || !userId || durationSeconds < 0) return;
+    await supabase.from('card_views').insert({ user_id: userId, flash_card_id: flashCardId, duration_seconds: Math.round(durationSeconds) });
+    const nextReview = new Date();
+    nextReview.setDate(nextReview.getDate() + 1);
+    await supabase.from('card_review_state').upsert(
+      { user_id: userId, flash_card_id: flashCardId, last_viewed_at: new Date().toISOString(), next_review_at: nextReview.toISOString(), interval_days: 1, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id,flash_card_id' }
+    );
+  }, [userId]);
+
+  const loadCards = useCallback(async () => {
+    if (!supabase) return;
+    const { data, error } = await supabase.from('flash_cards').select('id, title, front_text, back_text').eq('topic_id', topicId).order('sort_order', { ascending: true });
+    if (!error) setCards(shuffle((data as FlashCard[]) ?? []));
+  }, [topicId]);
+
+  const loadSavedIds = useCallback(async () => {
+    if (!supabase || !userId) return;
+    const { data, error } = await supabase.from('saved_cards').select('flash_card_id').eq('user_id', userId);
+    if (!error && data) setSavedIds(new Set((data as { flash_card_id: string }[]).map((r) => r.flash_card_id)));
+  }, [userId]);
+
+  useEffect(() => {
+    const run = async () => {
+      await Promise.all([loadCards(), loadSavedIds()]);
+      setLoading(false);
+    };
+    run();
+  }, [loadCards, loadSavedIds]);
+
+  useEffect(() => {
+    hasScrolledToInitial.current = false;
+  }, [topicId, initialFlashCardId]);
+
+  useEffect(() => {
+    if (!initialFlashCardId || !cards.length || hasScrolledToInitial.current) return;
+    const index = cards.findIndex((c) => c.id === initialFlashCardId);
+    if (index >= 0 && listRef.current) {
+      hasScrolledToInitial.current = true;
+      setCurrentIndex(index);
+      setTimeout(() => {
+        listRef.current?.scrollToOffset({ offset: index * cardHeight, animated: false });
+      }, 50);
+    }
+  }, [cards, initialFlashCardId, cardHeight]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadCards();
+    await loadSavedIds();
+    setRefreshing(false);
+  }, [loadCards, loadSavedIds]);
+
+  const toggleSave = useCallback(async (cardId: string) => {
+    if (!supabase || !userId) return;
+    if (savedIds.has(cardId)) {
+      await supabase.from('saved_cards').delete().eq('user_id', userId).eq('flash_card_id', cardId);
+      setSavedIds((p) => { const n = new Set(p); n.delete(cardId); return n; });
+    } else {
+      await supabase.from('saved_cards').insert({ user_id: userId, flash_card_id: cardId });
+      setSavedIds((p) => new Set(p).add(cardId));
+    }
+  }, [userId, savedIds]);
+
+  cardsRef.current = cards;
+  recordCardViewRef.current = recordCardView;
+
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: { index: number | null }[] }) => {
+    const idx = viewableItems[0]?.index;
+    if (idx == null) return;
+    onEndReachedCalled.current = false;
+    const list = cardsRef.current;
+    setCurrentIndex((prev) => {
+      if (prev !== idx && list[prev]) {
+        const duration = (Date.now() - viewStartTimeRef.current) / 1000;
+        recordCardViewRef.current(list[prev].id, duration);
+      }
+      viewStartTimeRef.current = Date.now();
+      return idx;
+    });
+  }).current;
+  const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 90 }).current;
+
+  useEffect(() => () => {
+    const list = cardsRef.current;
+    const cur = currentIndexRef.current;
+    if (list[cur]) {
+      const duration = (Date.now() - viewStartTimeRef.current) / 1000;
+      recordCardViewRef.current(list[cur].id, duration);
+    }
+  }, []);
+
+  const onScrollBeginDrag = useCallback(({ nativeEvent }: { nativeEvent: { contentOffset: { y: number } } }) => {
+    scrollStartY.current = nativeEvent.contentOffset.y; userDidDrag.current = true;
+  }, []);
+
+  const onScrollEnd = useCallback(({ nativeEvent }: { nativeEvent: { contentOffset: { y: number } } }) => {
+    if (!userDidDrag.current) return; userDidDrag.current = false;
+    const y = nativeEvent.contentOffset.y, delta = y - scrollStartY.current, cur = Math.round(y / cardHeight);
+    let target: number;
+    if (delta > SWIPE_THRESHOLD) target = Math.min(cur + 1, cards.length - 1);
+    else if (delta < -SWIPE_THRESHOLD) target = Math.max(cur - 1, 0);
+    else target = Math.max(0, Math.min(cur, cards.length - 1));
+    const off = target * cardHeight;
+    if (Math.abs(y - off) > 2) listRef.current?.scrollToOffset({ offset: off, animated: true });
+  }, [cardHeight, cards.length]);
+
+  const handleEndReached = useCallback(() => {
+    if (!cards.length || onEndReachedCalled.current) return;
+    onEndReachedCalled.current = true;
+    setCards((prev) => [...prev, ...shuffle([...cards])]);
+  }, [cards]);
+
+  const renderCard = useCallback(({ item }: ListRenderItemInfo<FlashCard>) => (
+    <CardItem card={item} cardHeight={cardHeight} insets={insets} />
+  ), [cardHeight, insets]);
+
+  const getItemLayout = useCallback((_: unknown, index: number) => ({ length: cardHeight, offset: cardHeight * index, index }), [cardHeight]);
+
+  if (loading) return <View style={[styles.centered, { backgroundColor: APP_THEME.background }]}><ActivityIndicator size="large" color={APP_THEME.primary} /></View>;
+
+  if (!cards.length) {
+    return (
+      <View style={[styles.centered, { backgroundColor: APP_THEME.background }]}>
+        <MaterialCommunityIcons name="cards-outline" size={56} color="#CBD5E1" />
+        <Text variant="bodyLarge" style={{ color: APP_THEME.textMuted2, marginTop: 16 }}>Bu konuda henüz bilgi kartı yok.</Text>
+        <Button mode="contained" onPress={() => navigation.goBack()} style={{ marginTop: 20, borderRadius: APP_THEME.radius.button, backgroundColor: APP_THEME.primary }}>Geri Dön</Button>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.container, { backgroundColor: APP_THEME.background }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 4 }]}>
+        <IconButton icon="arrow-left" size={22} onPress={() => navigation.goBack()} style={[styles.headerBtn, { backgroundColor: APP_THEME.surface, borderColor: APP_THEME.border }]} iconColor={APP_THEME.text} />
+        <Text variant="bodyMedium" style={{ flex: 1, color: APP_THEME.textMuted2 }} numberOfLines={1}>{topicName}</Text>
+        <Button
+          mode={savedIds.has(cards[currentIndex]?.id) ? 'contained' : 'outlined'}
+          onPress={() => cards[currentIndex] && toggleSave(cards[currentIndex].id)}
+          icon={savedIds.has(cards[currentIndex]?.id) ? 'bookmark' : 'bookmark-outline'}
+          compact
+          style={[styles.saveBtn, savedIds.has(cards[currentIndex]?.id) && styles.saveBtnActive]}
+          labelStyle={styles.saveBtnLabel}
+        >
+          {savedIds.has(cards[currentIndex]?.id) ? 'Kaydedildi' : 'Kaydet'}
+        </Button>
+      </View>
+
+      <FlatList
+        ref={listRef} data={cards} keyExtractor={(_, i) => `card-${i}`}
+        renderItem={renderCard} getItemLayout={getItemLayout}
+        pagingEnabled snapToInterval={cardHeight} snapToAlignment="start" decelerationRate="fast"
+        showsVerticalScrollIndicator={false}
+        onViewableItemsChanged={onViewableItemsChanged} viewabilityConfig={viewabilityConfig}
+        onScrollBeginDrag={onScrollBeginDrag} onScrollEndDrag={onScrollEnd} onMomentumScrollEnd={onScrollEnd}
+        onEndReached={handleEndReached} onEndReachedThreshold={0.4}
+        removeClippedSubviews windowSize={5} maxToRenderPerBatch={3} initialNumToRender={2}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[APP_THEME.primary]} tintColor={APP_THEME.primary} />}
+      />
+    </View>
+  );
+}
+
+function CardItem({ card, cardHeight, insets }: {
+  card: FlashCard; cardHeight: number;
+  insets: { top: number; bottom: number };
+}) {
+  const info = [card.front_text, card.back_text].filter(Boolean).join(' ');
+  return (
+    <View style={[styles.cardWrap, { height: cardHeight }]}>
+      <View style={[styles.cardContent, { paddingTop: insets.top + 60, paddingBottom: insets.bottom + 64 }]}>
+        <View style={styles.cardBody}>
+          <View style={styles.cardInner}>
+            <Text variant="bodyLarge" style={styles.cardText} selectable numberOfLines={14}>{info}</Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: APP_THEME.background },
+  header: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, zIndex: 10 },
+  headerBtn: { borderWidth: 1, borderRadius: 20 },
+  saveBtn: { borderRadius: APP_THEME.radius.button, borderColor: APP_THEME.primary },
+  saveBtnActive: { backgroundColor: APP_THEME.primary },
+  saveBtnLabel: { fontSize: 13, fontWeight: '600' },
+  cardWrap: { width: SCREEN_WIDTH },
+  cardContent: { flex: 1, paddingHorizontal: 24, justifyContent: 'center', alignItems: 'center' },
+  cardBody: { width: '100%', maxWidth: 500, justifyContent: 'center', alignItems: 'center' },
+  cardInner: { backgroundColor: APP_THEME.surface, borderRadius: APP_THEME.radius.card, padding: 28, width: '100%', maxWidth: 500, ...APP_THEME.shadow.card },
+  cardText: { color: APP_THEME.text, fontSize: 22, fontWeight: '500', lineHeight: 34, textAlign: 'center' },
+});
