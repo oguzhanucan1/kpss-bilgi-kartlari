@@ -139,8 +139,8 @@ export default function TopicSelectScreen({ route, navigation }: Props) {
               <MaterialCommunityIcons name="shuffle-variant" size={26} color="#fff" />
             </View>
             <View style={styles.cardContent}>
-              <Text style={[styles.cardTitle, styles.mixedCardTitle]}>Karışık</Text>
-              <Text style={styles.mixedCardMeta}>Bu dersin tüm konularından kartlar rastgele – genel tekrar</Text>
+              <Text style={[styles.cardTitle, styles.mixedCardTitle]}>Genel Tekrar</Text>
+              <Text style={styles.mixedCardMeta}>Bu dersin tüm konularından kartlar rastgele gelir. Genel tekrarlarınızı buradan yapabilirsiniz.</Text>
             </View>
             <MaterialCommunityIcons name="chevron-right" size={24} color="rgba(255,255,255,0.9)" />
           </LinearGradient>

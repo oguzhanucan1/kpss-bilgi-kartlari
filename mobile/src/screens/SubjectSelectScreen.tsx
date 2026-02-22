@@ -72,15 +72,25 @@ export default function SubjectSelectScreen({ navigation }: Props) {
 
   const loadSubjects = React.useCallback(async () => {
     if (!supabase) { setSubjects(DEMO); setAnnouncements([]); return; }
-    const { data, error } = await supabase.from('subjects').select('id, name, slug, icon_emoji').order('sort_order', { ascending: true });
-    setSubjects(error || !(data as Subject[])?.length ? DEMO : (data as Subject[]));
-
-    const { data: quotesData } = await supabase.from('motivation_quotes').select('text').eq('is_active', true).order('sort_order', { ascending: true });
-    const quotes = (quotesData as { text: string }[] | null)?.map((q) => q.text).filter(Boolean) ?? [];
-    setQuote(quotes.length ? quotes[Math.floor(Math.random() * quotes.length)] : DEFAULT_QUOTE);
-
-    const { data: annData } = await supabase.from('announcements').select('id, title, excerpt, created_at').eq('is_active', true).order('created_at', { ascending: false }).limit(10);
-    setAnnouncements((annData as Announcement[] | null) ?? []);
+    try {
+      const { data, error } = await supabase.from('subjects').select('id, name, slug, icon_emoji').order('sort_order', { ascending: true });
+      setSubjects(error || !(data as Subject[])?.length ? DEMO : (data as Subject[]));
+    } catch (_) {
+      setSubjects(DEMO);
+    }
+    try {
+      const { data: quotesData } = await supabase.from('motivation_quotes').select('text').eq('is_active', true).order('sort_order', { ascending: true });
+      const quotes = (quotesData as { text: string }[] | null)?.map((q) => q.text).filter(Boolean) ?? [];
+      setQuote(quotes.length ? quotes[Math.floor(Math.random() * quotes.length)] : DEFAULT_QUOTE);
+    } catch (_) {
+      setQuote(DEFAULT_QUOTE);
+    }
+    try {
+      const { data: annData } = await supabase.from('announcements').select('id, title, excerpt, created_at').eq('is_active', true).order('created_at', { ascending: false }).limit(10);
+      setAnnouncements((annData as Announcement[] | null) ?? []);
+    } catch (_) {
+      setAnnouncements([]);
+    }
   }, []);
 
   useEffect(() => { loadSubjects().then(() => setLoading(false)); }, [loadSubjects]);

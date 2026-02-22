@@ -9,6 +9,7 @@ const navItems = [
   { to: '/motivation', end: false, label: 'Motivasyon' },
   { to: '/announcements', end: false, label: 'Duyurular' },
   { to: '/ads', end: false, label: 'Reklamlar' },
+  { to: '/push', end: false, label: 'Push Bildirim' },
 ];
 
 export default function Layout() {
@@ -28,6 +29,7 @@ export default function Layout() {
     '/motivation': 'Motivasyon',
     '/announcements': 'Duyurular',
     '/ads': 'Reklamlar',
+    '/push': 'Push Bildirim',
   };
   const currentTitle = pageTitles[location.pathname] ?? 'Admin';
 

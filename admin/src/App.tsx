@@ -10,6 +10,7 @@ import Cards from './pages/Cards';
 import Motivation from './pages/Motivation';
 import Announcements from './pages/Announcements';
 import Ads from './pages/Ads';
+import PushNotifications from './pages/PushNotifications';
 
 export default function App() {
   const { session, isAdmin, loading } = useAuth();
@@ -50,6 +51,7 @@ export default function App() {
         <Route path="motivation" element={<Motivation />} />
         <Route path="announcements" element={<Announcements />} />
         <Route path="ads" element={<Ads />} />
+        <Route path="push" element={<PushNotifications />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

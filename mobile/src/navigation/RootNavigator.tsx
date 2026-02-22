@@ -5,6 +5,7 @@ import AuthStack from './AuthStack';
 import MainTabs from './MainTabs';
 import AccountSetupScreen from '../screens/AccountSetupScreen';
 import AppSessionTracker from '../context/AppSessionTracker';
+import { PushTokenRegistration } from '../components/PushTokenRegistration';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
 export default function RootNavigator() {
@@ -23,6 +24,7 @@ export default function RootNavigator() {
       <NavigationContainer>
         {!session ? <AuthStack /> : !isSetupComplete ? <AccountSetupScreen /> : (
           <>
+            <PushTokenRegistration />
             <MainTabs />
             <AppSessionTracker />
           </>
