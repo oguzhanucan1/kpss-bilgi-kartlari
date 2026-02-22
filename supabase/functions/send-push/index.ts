@@ -2,7 +2,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import * as jose from 'https://deno.land/x/jose@v5.2.0/index.ts';
 
-const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' };
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
+};
 
 async function getFcmAccessToken(serviceAccountJson: string): Promise<string> {
   const sa = JSON.parse(serviceAccountJson);
@@ -25,7 +30,9 @@ async function getFcmAccessToken(serviceAccountJson: string): Promise<string> {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { status: 200, headers: corsHeaders });
+  }
 
   try {
     const authHeader = req.headers.get('Authorization');
