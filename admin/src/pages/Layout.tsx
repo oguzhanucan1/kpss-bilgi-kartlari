@@ -8,6 +8,7 @@ const navItems = [
   { to: '/cards', end: false, label: 'Kartlar' },
   { to: '/motivation', end: false, label: 'Motivasyon' },
   { to: '/announcements', end: false, label: 'Duyurular' },
+  { to: '/ads', end: false, label: 'Reklamlar' },
 ];
 
 export default function Layout() {
@@ -26,6 +27,7 @@ export default function Layout() {
     '/cards': 'Kartlar',
     '/motivation': 'Motivasyon',
     '/announcements': 'Duyurular',
+    '/ads': 'Reklamlar',
   };
   const currentTitle = pageTitles[location.pathname] ?? 'Admin';
 

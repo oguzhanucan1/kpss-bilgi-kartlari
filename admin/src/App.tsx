@@ -9,6 +9,7 @@ import Topics from './pages/Topics';
 import Cards from './pages/Cards';
 import Motivation from './pages/Motivation';
 import Announcements from './pages/Announcements';
+import Ads from './pages/Ads';
 
 export default function App() {
   const { session, isAdmin, loading } = useAuth();
@@ -48,6 +49,7 @@ export default function App() {
         <Route path="cards" element={<Cards />} />
         <Route path="motivation" element={<Motivation />} />
         <Route path="announcements" element={<Announcements />} />
+        <Route path="ads" element={<Ads />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

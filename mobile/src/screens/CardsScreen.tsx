@@ -1,15 +1,37 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { View, StyleSheet, Dimensions, FlatList, RefreshControl, type ListRenderItemInfo } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text, IconButton, ActivityIndicator, Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { useAdSlots } from '../hooks/useAdSlots';
+import { AdSlotView } from '../components/AdSlotView';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '../navigation/types';
 import { APP_THEME } from '../theme';
 
 type FlashCard = { id: string; title: string | null; content: string };
+
+type ListItem =
+  | { type: 'card'; card: FlashCard; cardIndex: number }
+  | { type: 'ad'; slotKey: string };
+
+function buildListWithAds(cards: FlashCard[], slot: { slug: string } | null): ListItem[] {
+  if (!slot) return cards.map((card, i) => ({ type: 'card' as const, card, cardIndex: i }));
+  const items: ListItem[] = [];
+  for (let i = 0; i < cards.length; i++) {
+    if (i > 0 && i % 10 === 0) items.push({ type: 'ad', slotKey: slot.slug });
+    items.push({ type: 'card', card: cards[i], cardIndex: i });
+  }
+  return items;
+}
+
+function cardIndexToListIndex(cardIndex: number, hasAds: boolean): number {
+  if (!hasAds) return cardIndex;
+  return cardIndex + Math.floor(cardIndex / 10);
+}
+
 type Props = NativeStackScreenProps<MainStackParamList, 'Cards'>;
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -28,23 +50,32 @@ export default function CardsScreen({ route, navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { session } = useAuth();
   const userId = session?.user?.id;
+  const adSlots = useAdSlots();
+  const slotCardsEvery10 = adSlots['cards_every_10'] ?? null;
   const { topicId, topicName, initialFlashCardId } = route.params;
   const [cards, setCards] = useState<FlashCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentCard, setCurrentCard] = useState<FlashCard | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const listRef = useRef<FlatList>(null);
+  const listRef = useRef<FlatList<ListItem>>(null);
   const onEndReachedCalled = useRef(false);
   const scrollStartY = useRef(0);
   const userDidDrag = useRef(false);
   const hasScrolledToInitial = useRef(false);
   const viewStartTimeRef = useRef<number>(Date.now());
-  const cardsRef = useRef<FlashCard[]>([]);
   const recordCardViewRef = useRef<(id: string, sec: number) => Promise<void>>(async () => {});
   const currentIndexRef = useRef(0);
+  const listDataRef = useRef<ListItem[]>([]);
   const cardHeight = SCREEN_HEIGHT;
 
+  const listData = useMemo(
+    () => buildListWithAds(cards, slotCardsEvery10),
+    [cards, slotCardsEvery10]
+  );
+  const hasAds = !!slotCardsEvery10;
+  listDataRef.current = listData;
   currentIndexRef.current = currentIndex;
 
   const recordCardView = useCallback(async (flashCardId: string, durationSeconds: number) => {
@@ -83,16 +114,23 @@ export default function CardsScreen({ route, navigation }: Props) {
   }, [topicId, initialFlashCardId]);
 
   useEffect(() => {
+    if (listData.length === 0) return;
+    const item = listData[currentIndex];
+    if (item?.type === 'card') setCurrentCard(item.card);
+  }, [listData, currentIndex]);
+
+  useEffect(() => {
     if (!initialFlashCardId || !cards.length || hasScrolledToInitial.current) return;
-    const index = cards.findIndex((c) => c.id === initialFlashCardId);
-    if (index >= 0 && listRef.current) {
+    const cardIndex = cards.findIndex((c) => c.id === initialFlashCardId);
+    if (cardIndex >= 0 && listRef.current) {
+      const listIndex = cardIndexToListIndex(cardIndex, hasAds);
       hasScrolledToInitial.current = true;
-      setCurrentIndex(index);
+      setCurrentIndex(listIndex);
       setTimeout(() => {
-        listRef.current?.scrollToOffset({ offset: index * cardHeight, animated: false });
+        listRef.current?.scrollToOffset({ offset: listIndex * cardHeight, animated: false });
       }, 50);
     }
-  }, [cards, initialFlashCardId, cardHeight]);
+  }, [cards, initialFlashCardId, cardHeight, hasAds]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -112,31 +150,34 @@ export default function CardsScreen({ route, navigation }: Props) {
     }
   }, [userId, savedIds]);
 
-  cardsRef.current = cards;
   recordCardViewRef.current = recordCardView;
 
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: { index: number | null }[] }) => {
     const idx = viewableItems[0]?.index;
     if (idx == null) return;
     onEndReachedCalled.current = false;
-    const list = cardsRef.current;
+    const list = listDataRef.current;
+    const item = list[idx];
+    const prevItem = list[currentIndexRef.current];
     setCurrentIndex((prev) => {
-      if (prev !== idx && list[prev]) {
+      if (prev !== idx && prevItem?.type === 'card') {
         const duration = (Date.now() - viewStartTimeRef.current) / 1000;
-        recordCardViewRef.current(list[prev].id, duration);
+        recordCardViewRef.current(prevItem.card.id, duration);
       }
       viewStartTimeRef.current = Date.now();
       return idx;
     });
+    setCurrentCard((prev) => (item?.type === 'card' ? item.card : prev));
   }).current;
   const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 90 }).current;
 
   useEffect(() => () => {
-    const list = cardsRef.current;
+    const list = listDataRef.current;
     const cur = currentIndexRef.current;
-    if (list[cur]) {
+    const item = list[cur];
+    if (item?.type === 'card') {
       const duration = (Date.now() - viewStartTimeRef.current) / 1000;
-      recordCardViewRef.current(list[cur].id, duration);
+      recordCardViewRef.current(item.card.id, duration);
     }
   }, []);
 
@@ -147,13 +188,14 @@ export default function CardsScreen({ route, navigation }: Props) {
   const onScrollEnd = useCallback(({ nativeEvent }: { nativeEvent: { contentOffset: { y: number } } }) => {
     if (!userDidDrag.current) return; userDidDrag.current = false;
     const y = nativeEvent.contentOffset.y, delta = y - scrollStartY.current, cur = Math.round(y / cardHeight);
+    const maxIdx = listData.length - 1;
     let target: number;
-    if (delta > SWIPE_THRESHOLD) target = Math.min(cur + 1, cards.length - 1);
+    if (delta > SWIPE_THRESHOLD) target = Math.min(cur + 1, maxIdx);
     else if (delta < -SWIPE_THRESHOLD) target = Math.max(cur - 1, 0);
-    else target = Math.max(0, Math.min(cur, cards.length - 1));
+    else target = Math.max(0, Math.min(cur, maxIdx));
     const off = target * cardHeight;
     if (Math.abs(y - off) > 2) listRef.current?.scrollToOffset({ offset: off, animated: true });
-  }, [cardHeight, cards.length]);
+  }, [cardHeight, listData.length]);
 
   const handleEndReached = useCallback(() => {
     if (!cards.length || onEndReachedCalled.current) return;
@@ -161,9 +203,16 @@ export default function CardsScreen({ route, navigation }: Props) {
     setCards((prev) => [...prev, ...shuffle([...cards])]);
   }, [cards]);
 
-  const renderCard = useCallback(({ item }: ListRenderItemInfo<FlashCard>) => (
-    <CardItem card={item} cardHeight={cardHeight} insets={insets} />
-  ), [cardHeight, insets]);
+  const renderItem = useCallback(({ item, index }: ListRenderItemInfo<ListItem>) => {
+    if (item.type === 'ad') {
+      const slot = adSlots[item.slotKey];
+      if (!slot) return <View style={{ height: cardHeight, width: SCREEN_WIDTH }} />;
+      return <AdSlotView slot={slot} height={cardHeight} />;
+    }
+    return <CardItem card={item.card} cardHeight={cardHeight} insets={insets} />;
+  }, [cardHeight, insets, adSlots]);
+
+  const keyExtractor = useCallback((item: ListItem, index: number) => item.type === 'card' ? `card-${index}-${item.card.id}` : `ad-${index}`, []);
 
   const getItemLayout = useCallback((_: unknown, index: number) => ({ length: cardHeight, offset: cardHeight * index, index }), [cardHeight]);
 
@@ -185,20 +234,20 @@ export default function CardsScreen({ route, navigation }: Props) {
         <IconButton icon="arrow-left" size={22} onPress={() => navigation.goBack()} style={[styles.headerBtn, { backgroundColor: APP_THEME.surface, borderColor: APP_THEME.border }]} iconColor={APP_THEME.text} />
         <Text variant="bodyMedium" style={{ flex: 1, color: APP_THEME.textMuted2 }} numberOfLines={1}>{topicName}</Text>
         <Button
-          mode={savedIds.has(cards[currentIndex]?.id) ? 'contained' : 'outlined'}
-          onPress={() => cards[currentIndex] && toggleSave(cards[currentIndex].id)}
-          icon={savedIds.has(cards[currentIndex]?.id) ? 'bookmark' : 'bookmark-outline'}
+          mode={currentCard && savedIds.has(currentCard.id) ? 'contained' : 'outlined'}
+          onPress={() => currentCard && toggleSave(currentCard.id)}
+          icon={currentCard && savedIds.has(currentCard.id) ? 'bookmark' : 'bookmark-outline'}
           compact
-          style={[styles.saveBtn, savedIds.has(cards[currentIndex]?.id) && styles.saveBtnActive]}
+          style={[styles.saveBtn, currentCard && savedIds.has(currentCard.id) && styles.saveBtnActive]}
           labelStyle={styles.saveBtnLabel}
         >
-          {savedIds.has(cards[currentIndex]?.id) ? 'Kaydedildi' : 'Kaydet'}
+          {currentCard && savedIds.has(currentCard.id) ? 'Kaydedildi' : 'Kaydet'}
         </Button>
       </View>
 
       <FlatList
-        ref={listRef} data={cards} keyExtractor={(_, i) => `card-${i}`}
-        renderItem={renderCard} getItemLayout={getItemLayout}
+        ref={listRef} data={listData} keyExtractor={keyExtractor}
+        renderItem={renderItem} getItemLayout={getItemLayout}
         pagingEnabled snapToInterval={cardHeight} snapToAlignment="start" decelerationRate="fast"
         showsVerticalScrollIndicator={false}
         onViewableItemsChanged={onViewableItemsChanged} viewabilityConfig={viewabilityConfig}
