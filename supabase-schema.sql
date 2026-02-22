@@ -24,13 +24,12 @@ CREATE TABLE IF NOT EXISTS topics (
 
 CREATE INDEX idx_topics_subject ON topics(subject_id);
 
--- Bilgi kartları (TikTok tarzı kaydırılacak)
+-- Bilgi kartları (tek içerik alanı, TikTok tarzı kaydırılacak)
 CREATE TABLE IF NOT EXISTS flash_cards (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   topic_id UUID NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
   title TEXT,
-  front_text TEXT NOT NULL,
-  back_text TEXT NOT NULL,
+  content TEXT NOT NULL,
   sort_order INT DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT now()
 );

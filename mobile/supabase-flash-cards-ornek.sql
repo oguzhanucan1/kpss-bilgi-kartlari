@@ -1,20 +1,20 @@
--- Her konu başlığına 10 örnek bilgi kartı ekler.
+-- Her konu başlığına 10 örnek bilgi kartı ekler (tek içerik alanı).
 -- Önce supabase-kpss-konulari.sql ile ders ve konuları oluşturun, sonra bu dosyayı çalıştırın.
--- Supabase Dashboard → SQL Editor.
+-- Veritabanında flash_cards tablosu "content" sütununa sahip olmalı (supabase-flash-cards-single-content.sql veya güncel şema).
 
 WITH kart_sablonu AS (
   SELECT * FROM (VALUES
-    (1, 'Bu konuda temel kavram 1 nedir?', 'Örnek açıklama ve cevap 1. İçeriği düzenleyebilirsiniz.'),
-    (2, 'Bu konuda temel kavram 2 nedir?', 'Örnek açıklama ve cevap 2. İçeriği düzenleyebilirsiniz.'),
-    (3, 'Bu konuda temel kavram 3 nedir?', 'Örnek açıklama ve cevap 3. İçeriği düzenleyebilirsiniz.'),
-    (4, 'Bu konuda temel kavram 4 nedir?', 'Örnek açıklama ve cevap 4. İçeriği düzenleyebilirsiniz.'),
-    (5, 'Bu konuda temel kavram 5 nedir?', 'Örnek açıklama ve cevap 5. İçeriği düzenleyebilirsiniz.'),
-    (6, 'Bu konuda temel kavram 6 nedir?', 'Örnek açıklama ve cevap 6. İçeriği düzenleyebilirsiniz.'),
-    (7, 'Bu konuda temel kavram 7 nedir?', 'Örnek açıklama ve cevap 7. İçeriği düzenleyebilirsiniz.'),
-    (8, 'Bu konuda temel kavram 8 nedir?', 'Örnek açıklama ve cevap 8. İçeriği düzenleyebilirsiniz.'),
-    (9, 'Bu konuda temel kavram 9 nedir?', 'Örnek açıklama ve cevap 9. İçeriği düzenleyebilirsiniz.'),
-    (10, 'Bu konuda temel kavram 10 nedir?', 'Örnek açıklama ve cevap 10. İçeriği düzenleyebilirsiniz.')
-  ) AS v(ord, front_text, back_text)
+    (1, 'Bu konuda temel kavram 1 nedir? Örnek açıklama ve cevap 1. İçeriği düzenleyebilirsiniz.'),
+    (2, 'Bu konuda temel kavram 2 nedir? Örnek açıklama ve cevap 2. İçeriği düzenleyebilirsiniz.'),
+    (3, 'Bu konuda temel kavram 3 nedir? Örnek açıklama ve cevap 3. İçeriği düzenleyebilirsiniz.'),
+    (4, 'Bu konuda temel kavram 4 nedir? Örnek açıklama ve cevap 4. İçeriği düzenleyebilirsiniz.'),
+    (5, 'Bu konuda temel kavram 5 nedir? Örnek açıklama ve cevap 5. İçeriği düzenleyebilirsiniz.'),
+    (6, 'Bu konuda temel kavram 6 nedir? Örnek açıklama ve cevap 6. İçeriği düzenleyebilirsiniz.'),
+    (7, 'Bu konuda temel kavram 7 nedir? Örnek açıklama ve cevap 7. İçeriği düzenleyebilirsiniz.'),
+    (8, 'Bu konuda temel kavram 8 nedir? Örnek açıklama ve cevap 8. İçeriği düzenleyebilirsiniz.'),
+    (9, 'Bu konuda temel kavram 9 nedir? Örnek açıklama ve cevap 9. İçeriği düzenleyebilirsiniz.'),
+    (10, 'Bu konuda temel kavram 10 nedir? Örnek açıklama ve cevap 10. İçeriği düzenleyebilirsiniz.')
+  ) AS v(ord, content)
 ),
 konu_listesi AS (
   SELECT t.id AS topic_id
@@ -60,7 +60,7 @@ konu_listesi AS (
     ('vatandaslik', 'guncel-olaylar')
   )
 )
-INSERT INTO flash_cards (topic_id, front_text, back_text, sort_order)
-SELECT kl.topic_id, ks.front_text, ks.back_text, ks.ord
+INSERT INTO flash_cards (topic_id, content, sort_order)
+SELECT kl.topic_id, ks.content, ks.ord
 FROM konu_listesi kl
 CROSS JOIN kart_sablonu ks;

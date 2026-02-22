@@ -15,7 +15,7 @@ type SavedRow = {
   id: string;
   flash_card_id: string;
   created_at: string;
-  flash_cards: { id: string; front_text: string; back_text: string; title: string | null; topic_id: string } | null;
+  flash_cards: { id: string; content: string; title: string | null; topic_id: string } | null;
 };
 type TopicMap = Record<string, string>;
 
@@ -49,7 +49,7 @@ export default function KaydedilenScreen() {
     const ids = (saved as { flash_card_id: string }[]).map((s) => s.flash_card_id);
     const { data: cards, error: err2 } = await supabase
       .from('flash_cards')
-      .select('id, front_text, back_text, title, topic_id')
+      .select('id, content, title, topic_id')
       .in('id', ids);
 
     if (err2 || !cards) {
@@ -140,7 +140,7 @@ export default function KaydedilenScreen() {
           const fc = row.flash_cards;
           const topicId = fc?.topic_id;
           const topicName = topicId ? topicNames[topicId] ?? 'Konu' : 'Konu';
-          const preview = [fc?.front_text, fc?.back_text].filter(Boolean).join(' ').slice(0, 100);
+          const preview = (fc?.content ?? '').slice(0, 100);
           return (
             <Pressable
               key={row.id}

@@ -9,7 +9,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '../navigation/types';
 import { APP_THEME } from '../theme';
 
-type FlashCard = { id: string; title: string | null; front_text: string; back_text: string };
+type FlashCard = { id: string; title: string | null; content: string };
 type Props = NativeStackScreenProps<MainStackParamList, 'Cards'>;
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -60,7 +60,7 @@ export default function CardsScreen({ route, navigation }: Props) {
 
   const loadCards = useCallback(async () => {
     if (!supabase) return;
-    const { data, error } = await supabase.from('flash_cards').select('id, title, front_text, back_text').eq('topic_id', topicId).order('sort_order', { ascending: true });
+    const { data, error } = await supabase.from('flash_cards').select('id, title, content').eq('topic_id', topicId).order('sort_order', { ascending: true });
     if (!error) setCards(shuffle((data as FlashCard[]) ?? []));
   }, [topicId]);
 
@@ -215,13 +215,12 @@ function CardItem({ card, cardHeight, insets }: {
   card: FlashCard; cardHeight: number;
   insets: { top: number; bottom: number };
 }) {
-  const info = [card.front_text, card.back_text].filter(Boolean).join(' ');
   return (
     <View style={[styles.cardWrap, { height: cardHeight }]}>
       <View style={[styles.cardContent, { paddingTop: insets.top + 60, paddingBottom: insets.bottom + 64 }]}>
         <View style={styles.cardBody}>
           <View style={styles.cardInner}>
-            <Text variant="bodyLarge" style={styles.cardText} selectable numberOfLines={14}>{info}</Text>
+            <Text variant="bodyLarge" style={styles.cardText} selectable>{String(card.content || '').replace(/<[^>]*>/g, ' ').trim()}</Text>
           </View>
         </View>
       </View>
