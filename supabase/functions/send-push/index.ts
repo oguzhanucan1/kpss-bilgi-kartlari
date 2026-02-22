@@ -1,4 +1,4 @@
-// FCM HTTP v1 ile push bildirim gönderir. Admin panelinden çağrılır. İstatistik push_logs'a yazılır.
+// FCM HTTP v1 ile push bildirim gönderir. Admin panelinden çağrılır (Netlify proxy üzerinden).
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import * as jose from 'https://deno.land/x/jose@v5.2.0/index.ts';
 
@@ -30,8 +30,9 @@ async function getFcmAccessToken(serviceAccountJson: string): Promise<string> {
 }
 
 Deno.serve(async (req) => {
+  // Tarayıcıdan çağrı için preflight (Netlify vb. farklı origin)
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { status: 200, headers: corsHeaders });
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
   try {

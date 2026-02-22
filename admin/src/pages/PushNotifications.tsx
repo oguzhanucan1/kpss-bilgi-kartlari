@@ -73,13 +73,20 @@ export default function PushNotifications() {
     if (!supabase) return;
     setSending(true);
     try {
-      const { data, error } = await supabase.functions.invoke('send-push', {
-        body: { title: title.trim() || 'Bildirim', body: body.trim() },
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Oturum bulunamadı.');
+      const url = '/.netlify/functions/send-push';
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ title: title.trim() || 'Bildirim', body: body.trim() }),
       });
-      const err = (data as { error?: string })?.error ?? error?.message;
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((data as { error?: string }).error || res.statusText || 'Gönderilemedi.');
+      const err = (data as { error?: string }).error;
       if (err) throw new Error(err);
-      const sent = (data as { sent?: number })?.sent ?? 0;
-      const total = (data as { total?: number })?.total ?? 0;
+      const sent = (data as { sent?: number }).sent ?? 0;
+      const total = (data as { total?: number }).total ?? 0;
       setMessage({ type: 'success', text: `${sent} cihaza bildirim gönderildi${total ? ` / ${total} hedef` : ''}.` });
       setTitle('');
       setBody('');

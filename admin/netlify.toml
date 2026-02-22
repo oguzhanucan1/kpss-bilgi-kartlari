@@ -1,6 +1,7 @@
 [build]
   command = "npm install && npm run build"
   publish = "dist"
+  functions = "netlify/functions"
 
 # SPA: tüm rotalar index.html'e yönlendirilsin (React Router)
 [[redirects]]
