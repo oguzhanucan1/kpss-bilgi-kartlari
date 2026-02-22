@@ -5,6 +5,8 @@ import { Text, IconButton, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { useAdSlots } from '../hooks/useAdSlots';
+import { AdBannerSlot } from '../components/AdBannerSlot';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '../navigation/types';
 
@@ -64,6 +66,7 @@ export default function SubjectSelectScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const adSlots = useAdSlots();
   const name = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'Kullanıcı';
   const initials = name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
 
@@ -187,6 +190,8 @@ export default function SubjectSelectScreen({ navigation }: Props) {
             ))
           )}
         </View>
+
+        <AdBannerSlot slot={adSlots['home_banner']} />
 
       </ScrollView>
     </View>

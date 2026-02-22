@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS public.ad_slots (
   admob_unit_id TEXT,
   is_active BOOLEAN DEFAULT true,
   sort_order INT DEFAULT 0,
+  width_px INT,
+  height_px INT,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -32,7 +34,13 @@ CREATE POLICY "ad_slots admin all" ON public.ad_slots
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
 
--- Seed: Bilgi kartlarında her 10 kaydırmada bir reklam
-INSERT INTO public.ad_slots (slug, name, ad_type, is_active, sort_order)
-VALUES ('cards_every_10', 'Bilgi kartları – her 10 kaydırmada reklam', 'image', true, 10)
+-- Seed: Tüm kazanç odaklı reklam alanları (width_px x height_px; null = tam ekran)
+INSERT INTO public.ad_slots (slug, name, ad_type, is_active, sort_order, width_px, height_px) VALUES
+  ('cards_every_10', 'Bilgi kartları – her 10 kaydırmada reklam', 'image', true, 10, NULL, NULL),
+  ('home_banner', 'Anasayfa – alt banner', 'image', true, 20, 320, 50),
+  ('subject_list_banner', 'Dersler sayfası – alt banner', 'image', true, 30, 320, 50),
+  ('topic_list_banner', 'Konular sayfası – alt banner', 'image', true, 40, 320, 50),
+  ('test_banner', 'Test sayfası – alt banner', 'image', true, 50, 320, 50),
+  ('saved_banner', 'Kaydedilen sayfası – alt banner', 'image', true, 60, 320, 50),
+  ('analiz_banner', 'Analiz sayfası – alt banner', 'image', true, 70, 320, 50)
 ON CONFLICT (slug) DO NOTHING;

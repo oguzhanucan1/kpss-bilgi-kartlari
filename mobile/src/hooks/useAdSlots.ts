@@ -11,6 +11,8 @@ export type AdSlot = {
   admob_unit_id: string | null;
   is_active: boolean;
   sort_order: number;
+  width_px: number | null;
+  height_px: number | null;
 };
 
 export function useAdSlots(): Record<string, AdSlot> {

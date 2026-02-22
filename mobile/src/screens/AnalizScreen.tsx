@@ -6,6 +6,8 @@ import { Text, ActivityIndicator } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { useAdSlots } from '../hooks/useAdSlots';
+import { AdBannerSlot } from '../components/AdBannerSlot';
 import { APP_THEME } from '../theme';
 
 type TopicProgress = { topicId: string; topicName: string; viewed: number; total: number; pct: number };
@@ -38,6 +40,7 @@ export default function AnalizScreen() {
   const [weekSwipes, setWeekSwipes] = useState<{ date: string; count: number }[]>([]);
   const [topicProgress, setTopicProgress] = useState<TopicProgress[]>([]);
   const [dueTodayCount, setDueTodayCount] = useState(0);
+  const adSlots = useAdSlots();
 
   const load = useCallback(async () => {
     if (!supabase || !userId) {
@@ -220,6 +223,7 @@ export default function AnalizScreen() {
             ))}
           </View>
         )}
+        <AdBannerSlot slot={adSlots['analiz_banner']} />
       </ScrollView>
     </View>
   );

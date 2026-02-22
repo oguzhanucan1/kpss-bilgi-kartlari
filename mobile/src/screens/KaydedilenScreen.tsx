@@ -9,6 +9,8 @@ import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { useAdSlots } from '../hooks/useAdSlots';
+import { AdBannerSlot } from '../components/AdBannerSlot';
 import { APP_THEME } from '../theme';
 
 type SavedRow = {
@@ -25,6 +27,7 @@ export default function KaydedilenScreen() {
   const userId = session?.user?.id;
   const navigation = useNavigation<CompositeNavigationProp<BottomTabNavigationProp<any>, NativeStackNavigationProp<any>>>();
 
+  const adSlots = useAdSlots();
   const [list, setList] = useState<SavedRow[]>([]);
   const [topicNames, setTopicNames] = useState<TopicMap>({});
   const [loading, setLoading] = useState(true);
@@ -155,6 +158,7 @@ export default function KaydedilenScreen() {
             </Pressable>
           );
         })}
+        <AdBannerSlot slot={adSlots['saved_banner']} />
       </ScrollView>
     </View>
   );

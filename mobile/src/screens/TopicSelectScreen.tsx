@@ -6,6 +6,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { useAdSlots } from '../hooks/useAdSlots';
+import { AdBannerSlot } from '../components/AdBannerSlot';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '../navigation/types';
@@ -83,6 +85,7 @@ export default function TopicSelectScreen({ route, navigation }: Props) {
     setRefreshing(false);
   }, [loadTopics]);
 
+  const adSlots = useAdSlots();
   const totalCards = useMemo(() => topics.reduce((s, t) => s + (t.card_count ?? 0), 0), [topics]);
 
   const filtered = useMemo(() => {
@@ -156,6 +159,7 @@ export default function TopicSelectScreen({ route, navigation }: Props) {
             <Text style={styles.emptyText}>Konu bulunamadı</Text>
           </View>
         )}
+        <AdBannerSlot slot={adSlots['topic_list_banner']} />
       </ScrollView>
     </View>
   );

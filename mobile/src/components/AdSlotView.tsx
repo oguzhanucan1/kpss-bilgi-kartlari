@@ -6,17 +6,25 @@ import { APP_THEME } from '../theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-type Props = { slot: AdSlot; height: number };
+type Props = { slot: AdSlot; height: number; width?: number };
 
-export function AdSlotView({ slot, height }: Props) {
+export function AdSlotView({ slot, height, width: customWidth }: Props) {
+  const isFullScreen = slot.width_px == null || slot.height_px == null;
+  const w = customWidth ?? (slot.width_px != null ? Math.min(slot.width_px, SCREEN_WIDTH) : SCREEN_WIDTH);
+  const h = slot.height_px != null ? slot.height_px : height;
+
   if (slot.ad_type === 'image' && slot.image_url) {
     return (
-      <View style={[styles.wrap, { height }]}>
+      <View style={[styles.wrap, { width: w, height: h }]}>
         <Pressable
           style={styles.pressable}
           onPress={() => slot.link_url && Linking.openURL(slot.link_url)}
         >
-          <Image source={{ uri: slot.image_url }} style={styles.image} resizeMode="contain" />
+          <Image
+            source={{ uri: slot.image_url }}
+            style={[styles.image, isFullScreen ? styles.imageFull : { width: w, height: h, maxWidth: w, maxHeight: h }]}
+            resizeMode={isFullScreen ? 'contain' : 'cover'}
+          />
           {slot.link_url ? (
             <Text variant="labelSmall" style={styles.linkHint}>Reklam – tıklayın</Text>
           ) : null}
@@ -26,7 +34,7 @@ export function AdSlotView({ slot, height }: Props) {
   }
   if (slot.ad_type === 'admob' && slot.admob_unit_id) {
     return (
-      <View style={[styles.wrap, styles.admobPlaceholder, { height }]}>
+      <View style={[styles.wrap, styles.admobPlaceholder, { width: w, height: h }]}>
         <Text variant="bodySmall" style={styles.admobText}>
           Reklam alanı (AdMob)
         </Text>
@@ -41,24 +49,25 @@ export function AdSlotView({ slot, height }: Props) {
 
 const styles = StyleSheet.create({
   wrap: {
-    width: SCREEN_WIDTH,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: APP_THEME.surface,
   },
   pressable: {
     width: '100%',
-    flex: 1,
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    padding: 8,
   },
   image: {
+    borderRadius: APP_THEME.radius.card,
+  },
+  imageFull: {
     width: '100%',
     maxWidth: 400,
     height: '80%',
     maxHeight: 400,
-    borderRadius: APP_THEME.radius.card,
   },
   linkHint: {
     marginTop: 8,

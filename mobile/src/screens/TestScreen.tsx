@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { supabase } from '../lib/supabase';
+import { useAdSlots } from '../hooks/useAdSlots';
+import { AdBannerSlot } from '../components/AdBannerSlot';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '../navigation/types';
 
@@ -24,6 +26,7 @@ type Props = NativeStackScreenProps<MainStackParamList, 'Test'>;
 
 export default function TestScreen({ route, navigation }: Props) {
   const { topicId, topicName } = route.params;
+  const adSlots = useAdSlots();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -120,6 +123,7 @@ export default function TestScreen({ route, navigation }: Props) {
       </View>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         <Text style={styles.question}>{current?.question_text}</Text>
+        <AdBannerSlot slot={adSlots['test_banner']} />
         {options.map((opt) => {
           const isCorrect = opt.key === current?.correct_option;
           const isWrong = selected === opt.key && !isCorrect;
