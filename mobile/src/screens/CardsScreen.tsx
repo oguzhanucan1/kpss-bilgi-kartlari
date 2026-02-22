@@ -52,7 +52,7 @@ export default function CardsScreen({ route, navigation }: Props) {
   const userId = session?.user?.id;
   const adSlots = useAdSlots();
   const slotCardsEvery10 = adSlots['cards_every_10'] ?? null;
-  const { topicId, topicName, initialFlashCardId } = route.params;
+  const { topicId, topicName, subjectId, subjectName, initialFlashCardId } = route.params;
   const [cards, setCards] = useState<FlashCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
@@ -91,9 +91,19 @@ export default function CardsScreen({ route, navigation }: Props) {
 
   const loadCards = useCallback(async () => {
     if (!supabase) return;
-    const { data, error } = await supabase.from('flash_cards').select('id, title, content').eq('topic_id', topicId).order('sort_order', { ascending: true });
-    if (!error) setCards(shuffle((data as FlashCard[]) ?? []));
-  }, [topicId]);
+    if (subjectId) {
+      const { data: topicList } = await supabase.from('topics').select('id').eq('subject_id', subjectId);
+      const topicIds = (topicList ?? []).map((t: { id: string }) => t.id);
+      if (topicIds.length === 0) { setCards([]); return; }
+      const { data, error } = await supabase.from('flash_cards').select('id, title, content').in('topic_id', topicIds).order('sort_order', { ascending: true });
+      if (!error) setCards(shuffle((data as FlashCard[]) ?? []));
+    } else if (topicId) {
+      const { data, error } = await supabase.from('flash_cards').select('id, title, content').eq('topic_id', topicId).order('sort_order', { ascending: true });
+      if (!error) setCards(shuffle((data as FlashCard[]) ?? []));
+    } else {
+      setCards([]);
+    }
+  }, [topicId, subjectId]);
 
   const loadSavedIds = useCallback(async () => {
     if (!supabase || !userId) return;

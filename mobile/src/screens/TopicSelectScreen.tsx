@@ -125,6 +125,27 @@ export default function TopicSelectScreen({ route, navigation }: Props) {
           <ProgressBar progress={totalCards ? progressCount / totalCards : 0} color="#fff" style={styles.progressBar} />
         </View>
 
+        <Pressable
+          style={({ pressed }) => [styles.topicCardWrap, styles.mixedCardWrap, pressed && styles.cardPressed]}
+          onPress={() => navigation.navigate('Cards', { subjectId, subjectName, topicName: subjectName + ' – Karışık' })}
+        >
+          <LinearGradient
+            colors={['#7C3AED', '#5B21B6']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.topicCard}
+          >
+            <View style={[styles.cardIconWrap, styles.mixedIconWrap]}>
+              <MaterialCommunityIcons name="shuffle-variant" size={26} color="#fff" />
+            </View>
+            <View style={styles.cardContent}>
+              <Text style={[styles.cardTitle, styles.mixedCardTitle]}>Karışık</Text>
+              <Text style={styles.mixedCardMeta}>Bu dersin tüm konularından kartlar rastgele – genel tekrar</Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={24} color="rgba(255,255,255,0.9)" />
+          </LinearGradient>
+        </Pressable>
+
         {filtered.map((topic, index) => {
           const [gradStart, gradEnd] = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
           const iconName = TOPIC_ICONS[index % TOPIC_ICONS.length];
@@ -182,6 +203,8 @@ const styles = StyleSheet.create({
   progressValue: { fontSize: 14, fontWeight: '700', color: '#fff' },
   progressBar: { height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.25)' },
   topicCardWrap: { marginBottom: 12, borderRadius: APP_THEME.radius.small, ...APP_THEME.shadow.card },
+  mixedCardWrap: { marginBottom: 16 },
+  mixedIconWrap: { backgroundColor: 'rgba(255,255,255,0.25)' },
   topicCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -196,6 +219,8 @@ const styles = StyleSheet.create({
   cardContent: { flex: 1, justifyContent: 'center', minWidth: 0 },
   cardTitle: { fontSize: 16, fontWeight: '700', color: APP_THEME.text, lineHeight: 22 },
   cardMeta: { fontSize: 13, fontWeight: '500', color: APP_THEME.textMuted2, marginTop: 2 },
+  mixedCardTitle: { color: '#fff', marginBottom: 2 },
+  mixedCardMeta: { fontSize: 13, color: 'rgba(255,255,255,0.9)', marginTop: 2 },
   empty: { padding: 40, alignItems: 'center' },
   emptyText: { fontSize: 16, color: APP_THEME.textMuted2, marginTop: 12 },
 });

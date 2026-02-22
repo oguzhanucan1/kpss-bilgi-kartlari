@@ -7,7 +7,7 @@ export type AuthStackParamList = {
 export type MainStackParamList = {
   SubjectSelect: undefined;
   TopicSelect: { subjectId: string; subjectName: string };
-  Cards: { topicId: string; topicName: string; initialFlashCardId?: string };
+  Cards: { topicId?: string; topicName: string; subjectId?: string; subjectName?: string; initialFlashCardId?: string };
   Test: { topicId: string; topicName: string };
 };
 
