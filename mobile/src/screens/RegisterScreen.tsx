@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
 import { Button, Text, TextInput, IconButton } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation/types';
@@ -8,7 +9,10 @@ import { APP_THEME } from '../theme';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 
+const MAX_FORM_WIDTH = 400;
+
 export default function RegisterScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const { signUp } = useAuth();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -23,30 +27,85 @@ export default function RegisterScreen({ navigation }: Props) {
     const { error } = await signUp(email.trim(), password, fullName.trim() || undefined);
     setLoading(false);
     if (error) { Alert.alert('Kayıt hatası', error.message); }
-    else { Alert.alert('Başarılı', 'E-posta adresinize gelen link ile hesabınızı doğrulayın.'); navigation.replace('Login'); }
+    else { Alert.alert('Başarılı', 'Hesabınız oluşturuldu.'); /* Session ile otomatik giriş; Login ekranına atılmıyor */ }
   };
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <IconButton icon="arrow-left" size={24} onPress={() => navigation.goBack()} style={styles.backBtn} iconColor={APP_THEME.text} />
 
-        <Text style={styles.pageTitle}>Hesap Oluştur</Text>
-        <Text style={styles.subtitle}>KPSS hazırlığına hemen başla</Text>
-
-        <View style={styles.card}>
-          <View style={[styles.decoCircle, { borderColor: 'rgba(124,58,237,0.12)' }]} />
-          <TextInput label="Ad Soyad" mode="outlined" value={fullName} onChangeText={setFullName} disabled={loading} style={styles.input} left={<TextInput.Icon icon="account-outline" />} outlineColor={APP_THEME.border} activeOutlineColor={APP_THEME.primary} />
-          <TextInput label="E-posta" mode="outlined" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" disabled={loading} style={styles.input} left={<TextInput.Icon icon="email-outline" />} outlineColor={APP_THEME.border} activeOutlineColor={APP_THEME.primary} />
-          <TextInput label="Şifre" mode="outlined" value={password} onChangeText={setPassword} secureTextEntry={secureText} disabled={loading} style={styles.input} left={<TextInput.Icon icon="lock-outline" />} right={<TextInput.Icon icon={secureText ? 'eye-off-outline' : 'eye-outline'} onPress={() => setSecureText(!secureText)} />} outlineColor={APP_THEME.border} activeOutlineColor={APP_THEME.primary} />
-          <Button mode="contained" onPress={handleRegister} loading={loading} disabled={loading} style={styles.primaryBtn} contentStyle={styles.btnContent} labelStyle={styles.btnLabel}>
-            Kayıt Ol
-          </Button>
+        <View style={styles.headingWrap}>
+          <Text style={styles.pageTitle}>Hesap Oluştur</Text>
+          <Text style={styles.subtitle}>KPSS hazırlığına hemen başla</Text>
         </View>
 
-        <Button mode="text" onPress={() => navigation.replace('Login')} disabled={loading} style={styles.link} labelStyle={styles.linkLabel}>
-          Zaten hesabınız var mı? Giriş yapın
-        </Button>
+        <View style={styles.formWrap}>
+          <View style={styles.card}>
+            <TextInput
+              label="Ad"
+              mode="outlined"
+              value={fullName}
+              onChangeText={setFullName}
+              disabled={loading}
+              placeholder="Adınız"
+              style={styles.input}
+              left={<TextInput.Icon icon="account-outline" />}
+              outlineColor={APP_THEME.border}
+              activeOutlineColor={APP_THEME.primary}
+              theme={{ roundness: 14 }}
+            />
+            <TextInput
+              label="E-posta"
+              mode="outlined"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              disabled={loading}
+              placeholder="ornek@email.com"
+              style={styles.input}
+              left={<TextInput.Icon icon="email-outline" />}
+              outlineColor={APP_THEME.border}
+              activeOutlineColor={APP_THEME.primary}
+              theme={{ roundness: 14 }}
+            />
+            <TextInput
+              label="Şifre"
+              mode="outlined"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={secureText}
+              disabled={loading}
+              placeholder="En az 6 karakter"
+              style={styles.input}
+              left={<TextInput.Icon icon="lock-outline" />}
+              right={<TextInput.Icon icon={secureText ? 'eye-off-outline' : 'eye-outline'} onPress={() => setSecureText(!secureText)} />}
+              outlineColor={APP_THEME.border}
+              activeOutlineColor={APP_THEME.primary}
+              theme={{ roundness: 14 }}
+            />
+            <Button
+              mode="contained"
+              onPress={handleRegister}
+              loading={loading}
+              disabled={loading}
+              style={styles.primaryBtn}
+              contentStyle={styles.btnContent}
+              labelStyle={styles.btnLabel}
+            >
+              Kayıt Ol
+            </Button>
+          </View>
+
+          <Button mode="text" onPress={() => navigation.replace('Login')} disabled={loading} style={styles.link} labelStyle={styles.linkLabel}>
+            Zaten hesabınız var mı? Giriş yapın
+          </Button>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -54,16 +113,31 @@ export default function RegisterScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: APP_THEME.background },
-  scroll: { flexGrow: 1, padding: 20, paddingTop: 8 },
-  backBtn: { alignSelf: 'flex-start', marginBottom: 8 },
-  pageTitle: { fontSize: 32, fontWeight: '800', color: APP_THEME.text, marginBottom: 4, lineHeight: 40 },
-  subtitle: { fontSize: 16, color: APP_THEME.textMuted2, marginBottom: 24 },
-  card: { backgroundColor: APP_THEME.surface, borderRadius: APP_THEME.radius.card, padding: 24, marginBottom: 20, position: 'relative', overflow: 'hidden', borderWidth: 1, borderColor: APP_THEME.border },
-  decoCircle: { position: 'absolute', width: 100, height: 100, borderRadius: 50, borderWidth: 2, top: -20, right: -20 },
-  input: { marginBottom: 14, backgroundColor: APP_THEME.background },
-  primaryBtn: { borderRadius: APP_THEME.radius.button, backgroundColor: APP_THEME.primary, marginTop: 8 },
-  btnContent: { paddingVertical: 6 },
+  scroll: { flexGrow: 1, paddingHorizontal: 24, alignItems: 'center' },
+  backBtn: { alignSelf: 'flex-start', marginBottom: 16 },
+  headingWrap: { width: '100%', maxWidth: MAX_FORM_WIDTH, alignItems: 'center', marginBottom: 32 },
+  pageTitle: { fontSize: 28, fontWeight: '800', color: APP_THEME.text, marginBottom: 6, textAlign: 'center' },
+  subtitle: { fontSize: 15, color: APP_THEME.textMuted2, textAlign: 'center' },
+  formWrap: { width: '100%', maxWidth: MAX_FORM_WIDTH, alignItems: 'stretch' },
+  card: {
+    backgroundColor: APP_THEME.surface,
+    borderRadius: 20,
+    padding: 28,
+    marginBottom: 24,
+    ...APP_THEME.shadow?.card ?? {},
+    borderWidth: 1,
+    borderColor: APP_THEME.border,
+  },
+  input: { marginBottom: 18, backgroundColor: 'transparent' },
+  primaryBtn: {
+    borderRadius: 14,
+    backgroundColor: APP_THEME.primary,
+    marginTop: 10,
+    elevation: 0,
+    shadowOpacity: 0,
+  },
+  btnContent: { paddingVertical: 8 },
   btnLabel: { fontSize: 16, fontWeight: '700', color: '#fff' },
-  link: { marginTop: 8 },
-  linkLabel: { color: APP_THEME.primary, fontWeight: '700' },
+  link: { marginTop: 4 },
+  linkLabel: { color: APP_THEME.primary, fontWeight: '600', fontSize: 15 },
 });

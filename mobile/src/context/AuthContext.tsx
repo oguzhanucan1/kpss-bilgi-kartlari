@@ -63,12 +63,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, fullName?: string) => {
     if (!supabase) return { error: new Error('Supabase ayarlanmadı') };
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { full_name: fullName } },
     });
-    return { error: error ?? null };
+    if (error) return { error };
+    // E-posta doğrulama kapalıysa session gelir; gelmezse otomatik giriş dene (doğrulama kapalı olduğunda çalışır)
+    if (!data.session) {
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) return { error: signInError };
+    }
+    return { error: null };
   };
 
   const signOut = async () => {

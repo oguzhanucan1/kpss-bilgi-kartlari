@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, StyleSheet, StatusBar, ScrollView, Pressable } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, StyleSheet, StatusBar, ScrollView, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Text } from 'react-native-paper';
+import { Video } from 'expo-av';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation/types';
@@ -9,51 +10,68 @@ import { APP_THEME } from '../theme';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Welcome'>;
 
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 export default function WelcomeScreen({ navigation }: Props) {
+  const videoRef = useRef<Video>(null);
+
+  useEffect(() => {
+    videoRef.current?.playAsync().catch(() => {});
+  }, []);
+
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={APP_THEME.background} />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <Video
+        ref={videoRef}
+        source={require('../../assets/videos/welcome-bg.mp4')}
+        style={styles.video}
+        resizeMode="cover"
+        isLooping
+        isMuted
+        shouldPlay
+      />
+      <View style={styles.overlay} />
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-
-          <View style={styles.logoWrap}>
-            <View style={styles.logoIcon}>
-              <MaterialCommunityIcons name="school" size={40} color="#fff" />
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          <View style={styles.content}>
+            <View style={styles.logoWrap}>
+              <View style={styles.logoIcon}>
+                <MaterialCommunityIcons name="school" size={44} color="#fff" />
+              </View>
             </View>
-          </View>
 
-          <Text style={styles.headline}>KPSS hazırlığında{'\n'}yanındayız</Text>
-          <Text style={styles.sub}>Binlerce bilgi kartı ile sınavına en verimli şekilde hazırlan.</Text>
+            <Text style={styles.headline}>KPSS hazırlığında{'\n'}yanındayız</Text>
+            <Text style={styles.sub}>Binlerce bilgi kartı ile sınavına en verimli şekilde hazırlan.</Text>
 
-          <View style={styles.card}>
-            <View style={[styles.decoCircle, { borderColor: 'rgba(124,58,237,0.15)' }]} />
-            <Button mode="contained" onPress={() => navigation.navigate('Register')} contentStyle={styles.primaryContent} labelStyle={styles.primaryLabel} icon="arrow-right" style={styles.primaryBtn}>
-              Hemen Başla
-            </Button>
-          </View>
-
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>veya</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <Pressable style={({ pressed }) => [styles.socialCard, pressed && styles.cardPressed]} onPress={() => navigation.navigate('Register')}>
-            <View style={styles.socialIconWrap}>
-              <MaterialCommunityIcons name="google" size={22} color={APP_THEME.text} />
+            <View style={styles.actions}>
+              <Button
+                mode="contained"
+                onPress={() => navigation.navigate('Register')}
+                contentStyle={styles.primaryContent}
+                labelStyle={styles.primaryLabel}
+                icon="arrow-right"
+                style={styles.primaryBtn}
+              >
+                Hemen Başla
+              </Button>
+              <Button
+                mode="outlined"
+                onPress={() => navigation.navigate('Login')}
+                contentStyle={styles.secondaryContent}
+                labelStyle={styles.secondaryLabel}
+                style={styles.secondaryBtn}
+              >
+                Giriş Yap
+              </Button>
             </View>
-            <Text style={styles.socialLabel}>Google ile Devam Et</Text>
-          </Pressable>
-          <Pressable style={({ pressed }) => [styles.socialCard, pressed && styles.cardPressed]} onPress={() => navigation.navigate('Register')}>
-            <View style={styles.socialIconWrap}>
-              <MaterialCommunityIcons name="apple" size={22} color={APP_THEME.text} />
-            </View>
-            <Text style={styles.socialLabel}>Apple ile Devam Et</Text>
-          </Pressable>
 
-          <Button mode="text" onPress={() => navigation.navigate('Login')} style={styles.loginLink} labelStyle={styles.loginLinkLabel}>
-            Zaten hesabın var mı? Giriş Yap
-          </Button>
+            <Text style={styles.footerHint}>Ücretsiz hesap oluştur, kartlarla çalışmaya başla.</Text>
+          </View>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -61,25 +79,71 @@ export default function WelcomeScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: APP_THEME.background },
+  container: { flex: 1, backgroundColor: '#000' },
+  video: {
+    ...StyleSheet.absoluteFillObject,
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
   safe: { flex: 1 },
-  scroll: { paddingHorizontal: 20, paddingTop: 40, paddingBottom: 40, alignItems: 'center' },
-  logoWrap: { marginBottom: 28 },
-  logoIcon: { width: 80, height: 80, borderRadius: 24, backgroundColor: APP_THEME.primary, alignItems: 'center', justifyContent: 'center', ...APP_THEME.shadow.button },
-  headline: { fontSize: 32, fontWeight: '800', color: APP_THEME.text, lineHeight: 40, textAlign: 'center', marginBottom: 12 },
-  sub: { fontSize: 16, color: APP_THEME.textMuted2, textAlign: 'center', lineHeight: 24, marginBottom: 28, paddingHorizontal: 12 },
-  card: { width: '100%', backgroundColor: APP_THEME.cardPastel[4], borderRadius: APP_THEME.radius.card, padding: 24, marginBottom: 20, overflow: 'hidden', position: 'relative', minHeight: 100 },
-  decoCircle: { position: 'absolute', width: 120, height: 120, borderRadius: 60, borderWidth: 2, top: -30, right: -30 },
-  cardPressed: { opacity: 0.95 },
-  primaryBtn: { borderRadius: APP_THEME.radius.button, backgroundColor: APP_THEME.primary },
-  primaryContent: { paddingVertical: 8, flexDirection: 'row-reverse' },
-  primaryLabel: { fontSize: 17, fontWeight: '700', color: '#fff' },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, width: '100%' },
-  dividerLine: { flex: 1, height: 1, backgroundColor: APP_THEME.border },
-  dividerText: { marginHorizontal: 16, fontSize: 13, color: APP_THEME.textMuted2 },
-  socialCard: { width: '100%', flexDirection: 'row', alignItems: 'center', backgroundColor: APP_THEME.surface, borderRadius: APP_THEME.radius.card, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: APP_THEME.border },
-  socialIconWrap: { width: 44, height: 44, borderRadius: 14, backgroundColor: APP_THEME.background, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
-  socialLabel: { fontSize: 16, fontWeight: '600', color: APP_THEME.text, flex: 1 },
-  loginLink: { marginTop: 16 },
-  loginLinkLabel: { color: APP_THEME.primary, fontWeight: '700', fontSize: 15 },
+  scroll: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingVertical: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: SCREEN_HEIGHT,
+  },
+  content: {
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 400,
+  },
+  logoWrap: { marginBottom: 32 },
+  logoIcon: {
+    width: 88,
+    height: 88,
+    borderRadius: 28,
+    backgroundColor: APP_THEME.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...APP_THEME.shadow?.button,
+  },
+  headline: {
+    fontSize: 30,
+    fontWeight: '800',
+    color: '#fff',
+    lineHeight: 38,
+    textAlign: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 8,
+  },
+  sub: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.88)',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 40,
+    paddingHorizontal: 16,
+  },
+  actions: { width: '100%', gap: 14, marginBottom: 28 },
+  primaryBtn: {
+    borderRadius: APP_THEME.radius.button,
+    backgroundColor: APP_THEME.primary,
+    borderWidth: 0,
+  },
+  primaryContent: { paddingVertical: 6, flexDirection: 'row-reverse' },
+  primaryLabel: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  secondaryBtn: {
+    borderRadius: APP_THEME.radius.button,
+    borderColor: '#fff',
+    borderWidth: 2,
+  },
+  secondaryContent: { paddingVertical: 6 },
+  secondaryLabel: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  footerHint: { fontSize: 13, color: 'rgba(255,255,255,0.75)', textAlign: 'center' },
 });
