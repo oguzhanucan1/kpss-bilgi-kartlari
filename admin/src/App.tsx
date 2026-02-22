@@ -3,6 +3,7 @@ import { useAuth } from './hooks/useAuth';
 import Login from './pages/Login';
 import Layout from './pages/Layout';
 import Dashboard from './pages/Dashboard';
+import Users from './pages/Users';
 import Subjects from './pages/Subjects';
 import Topics from './pages/Topics';
 import Cards from './pages/Cards';
@@ -41,6 +42,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Layout />}>
         <Route index element={<Dashboard />} />
+        <Route path="users" element={<Users />} />
         <Route path="subjects" element={<Subjects />} />
         <Route path="topics" element={<Topics />} />
         <Route path="cards" element={<Cards />} />

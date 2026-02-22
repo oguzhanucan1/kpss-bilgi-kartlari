@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
+
+type BulkRow = { front_text: string; back_text: string; title?: string; sort_order: number };
 
 type Subject = { id: string; name: string };
 type Topic = { id: string; name: string; subject_id: string };
@@ -22,6 +25,9 @@ export default function Cards() {
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
   const [editing, setEditing] = useState<Card | null>(null);
   const [form, setForm] = useState({ title: '', front_text: '', back_text: '', sort_order: 0 });
+  const [bulkPreview, setBulkPreview] = useState<BulkRow[]>([]);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadSubjects = async () => {
     if (!supabase) return;
@@ -81,6 +87,86 @@ export default function Cards() {
     loadCards(selectedTopicId);
   };
 
+  const normalizeHeader = (h: string) => String(h ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const findCol = (row: Record<string, unknown>, keys: string[]) => {
+    const lower = Object.keys(row).map((k) => normalizeHeader(k));
+    for (const key of keys) {
+      const n = normalizeHeader(key);
+      const i = lower.findIndex((l) => l === n || l.includes(n) || n.includes(l));
+      if (i >= 0) return row[Object.keys(row)[i]] as string;
+    }
+    return '';
+  };
+
+  const parseBulkFile = (file: File) => {
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const raw = e.target?.result;
+        let rows: BulkRow[] = [];
+        if (ext === 'csv' || !raw) {
+          const text = typeof raw === 'string' ? raw : new TextDecoder().decode(raw as ArrayBuffer);
+          const lines = text.split(/\r?\n/).filter((l) => l.trim());
+          const sep = text.includes(';') ? ';' : ',';
+          const header = lines[0].split(sep).map((c) => c.trim());
+          const frontIdx = header.findIndex((h) => /ön|front/i.test(normalizeHeader(h)));
+          const backIdx = header.findIndex((h) => /arka|back/i.test(normalizeHeader(h)));
+          const titleIdx = header.findIndex((h) => /başlık|title/i.test(normalizeHeader(h)));
+          const sortIdx = header.findIndex((h) => /sıra|sort/i.test(normalizeHeader(h)));
+          for (let i = 1; i < lines.length; i++) {
+            const cells = lines[i].split(sep);
+            const front = frontIdx >= 0 ? cells[frontIdx]?.trim() ?? '' : cells[0] ?? '';
+            const back = backIdx >= 0 ? cells[backIdx]?.trim() ?? '' : cells[1] ?? '';
+            if (!front && !back) continue;
+            rows.push({
+              front_text: front,
+              back_text: back,
+              title: titleIdx >= 0 ? cells[titleIdx]?.trim() : undefined,
+              sort_order: sortIdx >= 0 ? Number(cells[sortIdx]) || i : i,
+            });
+          }
+        } else {
+          const wb = XLSX.read(raw, { type: 'array' });
+          const first = wb.SheetNames[0];
+          const sheet = wb.Sheets[first];
+          const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet);
+          rows = json.map((row, i) => ({
+            front_text: String(findCol(row, ['ön yüz', 'front_text', 'front', 'ön']) || ''),
+            back_text: String(findCol(row, ['arka yüz', 'back_text', 'back', 'arka']) || ''),
+            title: (findCol(row, ['başlık', 'title']) as string) || undefined,
+            sort_order: Number(findCol(row, ['sıra', 'sort_order']) || i + 1),
+          })).filter((r) => r.front_text.trim() || r.back_text.trim());
+        }
+        setBulkPreview(rows);
+        setMessage(rows.length ? { type: 'success', text: `${rows.length} kart bulundu. İçe aktarmak için aşağıdaki butonu kullanın.` } : { type: 'error', text: 'Uygun satır bulunamadı. Sütun adları: ön yüz/front_text, arka yüz/back_text, isteğe bağlı başlık, sıra.' });
+      } catch (err) {
+        setMessage({ type: 'error', text: 'Dosya okunamadı. Excel (.xlsx) veya CSV kullanın. İlk satır başlık olmalı.' });
+        setBulkPreview([]);
+      }
+    };
+    if (ext === 'csv') reader.readAsText(file, 'UTF-8');
+    else reader.readAsArrayBuffer(file);
+  };
+
+  const importBulk = async () => {
+    if (!supabase || !selectedTopicId || bulkPreview.length === 0) return;
+    setBulkLoading(true);
+    setMessage(null);
+    const rows = bulkPreview.map((r) => ({
+      topic_id: selectedTopicId,
+      title: r.title?.trim() || null,
+      front_text: String(r.front_text).trim() || '',
+      back_text: String(r.back_text).trim() || '',
+      sort_order: r.sort_order,
+    }));
+    const { error } = await supabase.from('flash_cards').insert(rows);
+    setBulkLoading(false);
+    if (error) setMessage({ type: 'error', text: error.message });
+    else { setMessage({ type: 'success', text: `${rows.length} kart eklendi.` }); setBulkPreview([]); loadCards(selectedTopicId); }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   return (
     <>
       {message && <div className={`mb-6 ${message.type === 'error' ? 'msg-error' : 'msg-success'}`}>{message.text}</div>}
@@ -110,6 +196,24 @@ export default function Cards() {
               <div><label className="mb-1 block text-sm font-medium text-bgray-700 dark:text-bgray-50">Sıra</label><input className="input-field w-28" type="number" value={form.sort_order} onChange={(e) => setForm((f) => ({ ...f, sort_order: Number(e.target.value) || 0 }))} /></div>
               <div className="flex gap-2"><button type="submit" className="btn-primary">{editing ? 'Kaydet' : 'Ekle'}</button>{editing && <button type="button" className="btn-secondary" onClick={() => { setEditing(null); setForm({ title: '', front_text: '', back_text: '', sort_order: 0 }); }}>İptal</button>}</div>
             </form>
+          </div>
+
+          <div className="card-bankco mb-6">
+            <h2 className="mb-2 text-lg font-semibold text-bgray-900 dark:text-white">Toplu kart ekle (Excel / CSV)</h2>
+            <p className="mb-4 text-sm text-bgray-600 dark:text-bgray-50">İlk satır başlık olmalı. Sütun adları: <strong>ön yüz</strong> (veya front_text), <strong>arka yüz</strong> (veya back_text). İsteğe bağlı: başlık, sıra.</p>
+            <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="mb-4 block w-full max-w-sm text-sm text-bgray-600 file:mr-4 file:rounded-xl file:border-0 file:bg-success-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-success-400" onChange={(e) => { const f = e.target.files?.[0]; if (f) parseBulkFile(f); }} />
+            {bulkPreview.length > 0 && (
+              <>
+                <div className="mb-4 max-h-60 overflow-auto rounded-xl border border-bgray-200 dark:border-darkblack-400">
+                  <table className="w-full border-collapse text-sm">
+                    <thead><tr className="sticky top-0 border-b border-bgray-200 bg-bgray-50 dark:border-darkblack-400 dark:bg-darkblack-500"><th className="px-3 py-2 text-left text-xs font-semibold text-bgray-600 dark:text-bgray-50">Ön yüz</th><th className="px-3 py-2 text-left text-xs font-semibold text-bgray-600 dark:text-bgray-50">Arka yüz</th><th className="px-3 py-2 text-left text-xs font-semibold text-bgray-600 dark:text-bgray-50">Sıra</th></tr></thead>
+                    <tbody>{bulkPreview.slice(0, 20).map((r, i) => (<tr key={i} className="border-b border-bgray-100 dark:border-darkblack-400"><td className="max-w-[200px] truncate px-3 py-2 text-bgray-700 dark:text-bgray-50">{String(r.front_text).replace(/<[^>]*>/g, ' ').slice(0, 60)}</td><td className="max-w-[200px] truncate px-3 py-2 text-bgray-700 dark:text-bgray-50">{String(r.back_text).replace(/<[^>]*>/g, ' ').slice(0, 60)}</td><td className="px-3 py-2">{r.sort_order}</td></tr>))}</tbody>
+                  </table>
+                </div>
+                {bulkPreview.length > 20 && <p className="mb-2 text-xs text-bgray-600 dark:text-bgray-50">… ve {bulkPreview.length - 20} satır daha</p>}
+                <button type="button" className="btn-primary" disabled={bulkLoading} onClick={importBulk}>{bulkLoading ? 'Ekleniyor…' : `${bulkPreview.length} kartı içe aktar`}</button>
+              </>
+            )}
           </div>
 
           <div className="card-bankco">

@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 
 const navItems = [
   { to: '/', end: true, label: 'Panel' },
+  { to: '/users', end: false, label: 'Kullanıcılar' },
   { to: '/subjects', end: false, label: 'Dersler & Konular' },
   { to: '/cards', end: false, label: 'Kartlar' },
   { to: '/motivation', end: false, label: 'Motivasyon' },
@@ -20,6 +21,7 @@ export default function Layout() {
 
   const pageTitles: Record<string, string> = {
     '/': 'Panel',
+    '/users': 'Kullanıcılar',
     '/subjects': 'Dersler & Konular',
     '/cards': 'Kartlar',
     '/motivation': 'Motivasyon',
