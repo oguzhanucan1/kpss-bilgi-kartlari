@@ -6,6 +6,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useAdSlots } from '../hooks/useAdSlots';
+import { useUnreadNotificationsCount } from '../hooks/useUnreadNotificationsCount';
 import { AdBannerSlot } from '../components/AdBannerSlot';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '../navigation/types';
@@ -67,6 +68,7 @@ export default function SubjectSelectScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
 
   const adSlots = useAdSlots();
+  const { count: unreadCount } = useUnreadNotificationsCount();
   const name = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'Kullanıcı';
   const initials = name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
 
@@ -135,7 +137,14 @@ export default function SubjectSelectScreen({ navigation }: Props) {
               </View>
             </View>
           </View>
-          <IconButton icon="bell-outline" size={22} onPress={() => {}} style={styles.notifBtn} />
+          <View style={styles.notifWrap}>
+            <IconButton icon="bell-outline" size={22} onPress={() => navigation.navigate('BildirimListesi')} style={styles.notifBtn} />
+            {unreadCount > 0 && (
+              <View style={styles.notifBadge}>
+                <Text style={styles.notifBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Motivasyon sözü */}
@@ -223,7 +232,10 @@ const styles = StyleSheet.create({
   headerMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   miniProgress: { width: 80, height: 6, borderRadius: 3, backgroundColor: 'rgba(124,58,237,0.15)' },
   miniProgressFill: { height: '100%', borderRadius: 3, backgroundColor: '#7C3AED' },
+  notifWrap: { position: 'relative' },
   notifBtn: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 22, backgroundColor: '#fff' },
+  notifBadge: { position: 'absolute', top: 2, right: 2, minWidth: 18, height: 18, borderRadius: 9, backgroundColor: '#DC2626', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  notifBadgeText: { fontSize: 11, fontWeight: '800', color: '#fff' },
 
   // Motivasyon
   quoteCard: { backgroundColor: '#fff', borderRadius: 20, padding: 20, marginBottom: 24, borderWidth: 1, borderColor: '#E2E8F0' },

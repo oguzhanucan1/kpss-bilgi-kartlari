@@ -26,8 +26,21 @@ export default function RegisterScreen({ navigation }: Props) {
     setLoading(true);
     const { error } = await signUp(email.trim(), password, fullName.trim() || undefined);
     setLoading(false);
-    if (error) { Alert.alert('Kayıt hatası', error.message); }
-    else { Alert.alert('Başarılı', 'Hesabınız oluşturuldu.'); /* Session ile otomatik giriş; Login ekranına atılmıyor */ }
+    if (error) {
+      const msg = error.message.toLowerCase();
+      const isRateLimit = msg.includes('rate limit') || msg.includes('rate_limit');
+      let body = error.message;
+      if (isRateLimit) {
+        body = 'Çok fazla deneme. Lütfen 1 saat sonra tekrar deneyin. Supabase Dashboard → Authentication → Providers → Email bölümünden "Confirm email"i kapatırsanız e-posta limiti oluşmaz.';
+      } else if (msg.includes('duplicate') || msg.includes('unique') || msg.includes('23505')) {
+        body = 'Bu e-posta adresi zaten kayıtlı. Giriş yapmayı deneyin.';
+      } else if (msg.includes('signup') || msg.includes('sign_up') || msg.includes('insert') || msg.includes('profiles')) {
+        body = 'Kayıt sırasında bir hata oluştu. Lütfen Supabase projenizde "supabase-fix-register-trigger.sql" dosyasını SQL Editor\'da çalıştırın.';
+      }
+      Alert.alert('Kayıt hatası', body);
+    } else {
+      Alert.alert('Başarılı', 'Hesabınız oluşturuldu.');
+    }
   };
 
   return (

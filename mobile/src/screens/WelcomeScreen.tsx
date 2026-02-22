@@ -1,8 +1,9 @@
 import React, { useRef, useEffect } from 'react';
 import { View, StyleSheet, StatusBar, ScrollView, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Button, Text } from 'react-native-paper';
-import { Video } from 'expo-av';
+import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation/types';
@@ -19,6 +20,14 @@ export default function WelcomeScreen({ navigation }: Props) {
     videoRef.current?.playAsync().catch(() => {});
   }, []);
 
+  const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
+    if (!status.isLoaded) return;
+    const { positionMillis, durationMillis } = status;
+    if (durationMillis != null && durationMillis > 0 && positionMillis >= durationMillis - 100) {
+      videoRef.current?.setPositionAsync(0).then(() => videoRef.current?.playAsync()).catch(() => {});
+    }
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
@@ -26,12 +35,17 @@ export default function WelcomeScreen({ navigation }: Props) {
         ref={videoRef}
         source={require('../../assets/videos/welcome-bg.mp4')}
         style={styles.video}
-        resizeMode="cover"
+        resizeMode={ResizeMode.STRETCH}
         isLooping
         isMuted
         shouldPlay
+        onPlaybackStatusUpdate={onPlaybackStatusUpdate}
       />
-      <View style={styles.overlay} />
+      <LinearGradient
+        colors={['transparent', 'transparent', 'rgba(0,0,0,0.6)', 'rgba(0,0,0,8)']}
+        style={styles.overlay}
+        locations={[0, 0.32, 0.55, 1]}
+      />
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScrollView
           contentContainerStyle={styles.scroll}
@@ -87,7 +101,8 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
   },
   safe: { flex: 1 },
   scroll: {

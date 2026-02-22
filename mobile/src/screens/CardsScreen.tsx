@@ -78,6 +78,13 @@ export default function CardsScreen({ route, navigation }: Props) {
   listDataRef.current = listData;
   currentIndexRef.current = currentIndex;
 
+  const initialScrollIndex = useMemo(() => {
+    if (!initialFlashCardId || !cards.length) return 0;
+    const idx = cards.findIndex((c) => c.id === initialFlashCardId);
+    if (idx < 0) return 0;
+    return cardIndexToListIndex(idx, hasAds);
+  }, [cards, initialFlashCardId, hasAds]);
+
   const recordCardView = useCallback(async (flashCardId: string, durationSeconds: number) => {
     if (!supabase || !userId || durationSeconds < 0) return;
     await supabase.from('card_views').insert({ user_id: userId, flash_card_id: flashCardId, duration_seconds: Math.round(durationSeconds) });
@@ -256,14 +263,28 @@ export default function CardsScreen({ route, navigation }: Props) {
       </View>
 
       <FlatList
-        ref={listRef} data={listData} keyExtractor={keyExtractor}
-        renderItem={renderItem} getItemLayout={getItemLayout}
-        pagingEnabled snapToInterval={cardHeight} snapToAlignment="start" decelerationRate="fast"
+        ref={listRef}
+        data={listData}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
+        getItemLayout={getItemLayout}
+        initialScrollIndex={initialScrollIndex}
+        pagingEnabled
+        snapToInterval={cardHeight}
+        snapToAlignment="start"
+        decelerationRate="fast"
         showsVerticalScrollIndicator={false}
-        onViewableItemsChanged={onViewableItemsChanged} viewabilityConfig={viewabilityConfig}
-        onScrollBeginDrag={onScrollBeginDrag} onScrollEndDrag={onScrollEnd} onMomentumScrollEnd={onScrollEnd}
-        onEndReached={handleEndReached} onEndReachedThreshold={0.4}
-        removeClippedSubviews windowSize={5} maxToRenderPerBatch={3} initialNumToRender={2}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        onScrollBeginDrag={onScrollBeginDrag}
+        onScrollEndDrag={onScrollEnd}
+        onMomentumScrollEnd={onScrollEnd}
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.4}
+        removeClippedSubviews
+        windowSize={5}
+        maxToRenderPerBatch={3}
+        initialNumToRender={initialFlashCardId ? Math.max(2, initialScrollIndex + 2) : 2}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[APP_THEME.primary]} tintColor={APP_THEME.primary} />}
       />
     </View>

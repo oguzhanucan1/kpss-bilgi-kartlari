@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { Button, Text, TextInput, HelperText } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { APP_THEME } from '../theme';
 
+const HEDEF_YIL_OPTIONS = ['2026', '2027', '2028', '2029', '2030'] as const;
+
 const STEPS = [
   { key: 'username', title: 'Kullanıcı adı seç', placeholder: 'Örn: ayse_2026', icon: 'at', required: true },
-  { key: 'full_name', title: 'Adın Soyadın', placeholder: 'Örn: Ayşe Yılmaz', icon: 'account-outline', required: true },
-  { key: 'hedef_yil', title: 'Hedef KPSS yılı', placeholder: 'Örn: 2026', icon: 'calendar-outline', required: false },
+  { key: 'full_name', title: 'Adınız', placeholder: 'Adınız', icon: 'account-outline', required: true },
+  { key: 'hedef_yil', title: 'Hedef KPSS yılı', placeholder: 'Yıl seçin', icon: 'calendar-outline', required: false },
 ] as const;
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_\u00C0-\u024F]{3,30}$/;
@@ -62,23 +64,45 @@ export default function AccountSetupScreen() {
 
         <View style={styles.card}>
           <View style={[styles.decoCircle, { borderColor: 'rgba(124,58,237,0.12)' }]} />
-          <TextInput
-            label={current.title}
-            placeholder={current.placeholder}
-            mode="outlined"
-            value={value}
-            onChangeText={setValue}
-            disabled={loading}
-            autoFocus
-            keyboardType={current.key === 'hedef_yil' ? 'number-pad' : 'default'}
-            autoCapitalize={current.key === 'full_name' ? 'words' : 'none'}
-            autoCorrect={false}
-            error={usernameError}
-            left={<TextInput.Icon icon={current.icon} />}
-            style={styles.input}
-            outlineColor={APP_THEME.border}
-            activeOutlineColor={APP_THEME.primary}
-          />
+          {current.key === 'hedef_yil' ? (
+            <View style={styles.yearSection}>
+              <Text style={styles.yearLabel}>{current.title}</Text>
+              <View style={styles.yearRow}>
+                {HEDEF_YIL_OPTIONS.map((yil) => {
+                  const selected = hedefYil === yil;
+                  return (
+                    <TouchableOpacity
+                      key={yil}
+                      onPress={() => setHedefYil(yil)}
+                      disabled={loading}
+                      style={[styles.yearChip, selected && styles.yearChipSelected]}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.yearChipText, selected && styles.yearChipTextSelected]}>{yil}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          ) : (
+            <TextInput
+              label={current.title}
+              placeholder={current.placeholder}
+              mode="outlined"
+              value={value}
+              onChangeText={setValue}
+              disabled={loading}
+              autoFocus
+              keyboardType="default"
+              autoCapitalize={current.key === 'full_name' ? 'words' : 'none'}
+              autoCorrect={false}
+              error={usernameError}
+              left={<TextInput.Icon icon={current.icon} />}
+              style={styles.input}
+              outlineColor={APP_THEME.border}
+              activeOutlineColor={APP_THEME.primary}
+            />
+          )}
           {current.key === 'username' && (
             <HelperText type={usernameError ? 'error' : 'info'} visible={value.trim().length > 0}>
               {usernameError ? 'En az 3 karakter, harf/rakam/alt çizgi' : 'Kullanılabilir'}
@@ -110,6 +134,13 @@ const styles = StyleSheet.create({
   card: { backgroundColor: APP_THEME.surface, borderRadius: APP_THEME.radius.card, padding: 24, borderWidth: 1, borderColor: APP_THEME.border, position: 'relative', overflow: 'hidden' },
   decoCircle: { position: 'absolute', width: 80, height: 80, borderRadius: 40, borderWidth: 2, top: -20, right: -20 },
   input: { marginBottom: 4, backgroundColor: APP_THEME.background },
+  yearSection: { marginBottom: 8 },
+  yearLabel: { fontSize: 12, color: APP_THEME.textMuted2, marginBottom: 12 },
+  yearRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  yearChip: { paddingVertical: 12, paddingHorizontal: 20, borderRadius: 12, borderWidth: 2, borderColor: APP_THEME.border, backgroundColor: APP_THEME.background },
+  yearChipSelected: { borderColor: APP_THEME.primary, backgroundColor: APP_THEME.primaryLight },
+  yearChipText: { fontSize: 16, fontWeight: '600', color: APP_THEME.text },
+  yearChipTextSelected: { color: APP_THEME.primary, fontWeight: '700' },
   actions: { flexDirection: 'row', gap: 12, alignItems: 'center', justifyContent: 'flex-end', marginTop: 24 },
   nextBtn: { borderRadius: APP_THEME.radius.button, minWidth: 140, backgroundColor: APP_THEME.primary },
   nextBtnContent: { paddingVertical: 6 },
