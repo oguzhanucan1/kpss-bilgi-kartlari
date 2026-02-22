@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 type Quote = { id: string; text: string; sort_order: number; is_active: boolean };

@@ -8,27 +8,26 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!supabase) {
+    const client = supabase;
+    if (!client) {
       setLoading(false);
       return;
     }
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
+    client.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       if (s?.user?.id) {
-        supabase.from('profiles').select('role').eq('id', s.user.id).single()
-          .then(({ data }) => setProfile(data))
-          .catch(() => setProfile(null));
+        client.from('profiles').select('role').eq('id', s.user.id).single()
+          .then(({ data }) => setProfile(data), () => setProfile(null));
       } else {
         setProfile(null);
       }
       setLoading(false);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
+    const { data: { subscription } } = client.auth.onAuthStateChange((_e, s) => {
       setSession(s);
       if (s?.user?.id) {
-        supabase.from('profiles').select('role').eq('id', s.user.id).single()
-          .then(({ data }) => setProfile(data))
-          .catch(() => setProfile(null));
+        client.from('profiles').select('role').eq('id', s.user.id).single()
+          .then(({ data }) => setProfile(data), () => setProfile(null));
       } else {
         setProfile(null);
       }
