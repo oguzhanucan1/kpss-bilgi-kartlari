@@ -1,9 +1,10 @@
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { supabase } from './supabase';
 
-/** FCM veya Expo push token alır ve Supabase push_tokens tablosuna kaydeder. */
+/** Expo push token alır ve Supabase push_tokens tablosuna kaydeder. */
 export async function registerPushTokenForUser(userId: string): Promise<boolean> {
   if (!supabase || !Device.isDevice) return false;
 
@@ -15,9 +16,10 @@ export async function registerPushTokenForUser(userId: string): Promise<boolean>
   }
   if (finalStatus !== 'granted') return false;
 
+  const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? undefined;
   try {
     const tokenData = await Notifications.getExpoPushTokenAsync({
-      projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? undefined,
+      projectId: projectId || undefined,
     });
     const token = tokenData.data;
     if (!token) return false;

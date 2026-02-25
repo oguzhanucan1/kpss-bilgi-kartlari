@@ -144,7 +144,7 @@ export default function PushNotifications() {
       <div className="card-bankco mb-6">
         <h2 className="mb-2 text-lg font-semibold text-bgray-900 dark:text-white">Push bildirim gönder</h2>
         <p className="mb-4 text-sm text-bgray-600 dark:text-bgray-50">
-          Kayıtlı tüm cihazlara (FCM token’ı olan kullanıcılar) bildirim gider.
+          Kayıtlı tüm cihazlara (Expo veya FCM token’ı olan kullanıcılar) bildirim gider.
         </p>
         <form onSubmit={sendPush} className="space-y-4">
           <div>
