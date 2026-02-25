@@ -282,8 +282,8 @@ export default function CardsScreen({ route, navigation }: Props) {
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.4}
         removeClippedSubviews
-        windowSize={5}
-        maxToRenderPerBatch={3}
+        windowSize={3}
+        maxToRenderPerBatch={2}
         initialNumToRender={initialFlashCardId ? Math.max(2, initialScrollIndex + 2) : 2}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[APP_THEME.primary]} tintColor={APP_THEME.primary} />}
       />
@@ -291,22 +291,23 @@ export default function CardsScreen({ route, navigation }: Props) {
   );
 }
 
-function CardItem({ card, cardHeight, insets }: {
+const CardItem = React.memo(function CardItem({ card, cardHeight, insets }: {
   card: FlashCard; cardHeight: number;
   insets: { top: number; bottom: number };
 }) {
+  const text = useMemo(() => String(card.content || '').replace(/<[^>]*>/g, ' ').trim(), [card.content]);
   return (
     <View style={[styles.cardWrap, { height: cardHeight }]}>
       <View style={[styles.cardContent, { paddingTop: insets.top + 60, paddingBottom: insets.bottom + 64 }]}>
         <View style={styles.cardBody}>
           <View style={styles.cardInner}>
-            <Text variant="bodyLarge" style={styles.cardText} selectable>{String(card.content || '').replace(/<[^>]*>/g, ' ').trim()}</Text>
+            <Text variant="bodyLarge" style={styles.cardText} selectable>{text}</Text>
           </View>
         </View>
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: { flex: 1 },

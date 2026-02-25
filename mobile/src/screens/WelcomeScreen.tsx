@@ -1,9 +1,9 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { View, StyleSheet, StatusBar, ScrollView, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Button, Text } from 'react-native-paper';
-import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
+import { Video, ResizeMode } from 'expo-av';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation/types';
@@ -15,34 +15,34 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function WelcomeScreen({ navigation }: Props) {
   const videoRef = useRef<Video>(null);
+  const [videoError, setVideoError] = useState(false);
 
   useEffect(() => {
-    videoRef.current?.playAsync().catch(() => {});
+    const t = setTimeout(() => {
+      videoRef.current?.playAsync().catch(() => setVideoError(true));
+    }, 100);
+    return () => clearTimeout(t);
   }, []);
-
-  const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
-    if (!status.isLoaded) return;
-    const { positionMillis, durationMillis } = status;
-    if (durationMillis != null && durationMillis > 0 && positionMillis >= durationMillis - 100) {
-      videoRef.current?.setPositionAsync(0).then(() => videoRef.current?.playAsync()).catch(() => {});
-    }
-  };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      <Video
-        ref={videoRef}
-        source={require('../../assets/videos/welcome-bg.mp4')}
-        style={styles.video}
-        resizeMode={ResizeMode.STRETCH}
-        isLooping
-        isMuted
-        shouldPlay
-        onPlaybackStatusUpdate={onPlaybackStatusUpdate}
-      />
+      {!videoError ? (
+        <Video
+          ref={videoRef}
+          source={require('../../assets/videos/welcome-bg.mp4')}
+          style={styles.video}
+          resizeMode={ResizeMode.COVER}
+          isLooping
+          isMuted
+          shouldPlay
+          onError={() => setVideoError(true)}
+        />
+      ) : (
+        <LinearGradient colors={['#1a0a2e', '#2d1b4e', '#1a0a2e']} style={StyleSheet.absoluteFillObject} />
+      )}
       <LinearGradient
-        colors={['transparent', 'transparent', 'rgba(0,0,0,0.6)', 'rgba(0,0,0,8)']}
+        colors={['transparent', 'transparent', 'rgba(0,0,0,0.6)', 'rgba(0,0,0,0.8)']}
         style={styles.overlay}
         locations={[0, 0.32, 0.55, 1]}
       />

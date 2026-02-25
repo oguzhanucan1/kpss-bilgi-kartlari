@@ -8,7 +8,6 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useAdSlots } from '../hooks/useAdSlots';
 import { AdBannerSlot } from '../components/AdBannerSlot';
-import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '../navigation/types';
 import { APP_THEME } from '../theme';
@@ -77,7 +76,7 @@ export default function TopicSelectScreen({ route, navigation }: Props) {
   }, [subjectId, userId]);
 
   useEffect(() => { loadTopics().then(() => setLoading(false)); }, [loadTopics]);
-  useFocusEffect(useCallback(() => { if (!loading) loadTopics(); }, [loadTopics, loading]));
+  // Geri dönüşte tekrar veri çekme kaldırıldı (performans). Güncel ilerleme için aşağı çekip yenile.
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -100,7 +99,7 @@ export default function TopicSelectScreen({ route, navigation }: Props) {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={() => navigation.goBack()} style={styles.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color={APP_THEME.text} />
         </Pressable>
         <View style={styles.headerCenter}>
@@ -126,6 +125,7 @@ export default function TopicSelectScreen({ route, navigation }: Props) {
         </View>
 
         <Pressable
+          android_ripple={{ color: 'rgba(255,255,255,0.3)' }}
           style={({ pressed }) => [styles.topicCardWrap, styles.mixedCardWrap, pressed && styles.cardPressed]}
           onPress={() => navigation.navigate('Cards', { subjectId, subjectName, topicName: subjectName + ' – Karışık' })}
         >
@@ -152,6 +152,7 @@ export default function TopicSelectScreen({ route, navigation }: Props) {
           return (
             <Pressable
               key={topic.id}
+              android_ripple={{ color: 'rgba(0,0,0,0.08)' }}
               style={({ pressed }) => [styles.topicCardWrap, pressed && styles.cardPressed]}
               onPress={() => navigation.navigate('Cards', { topicId: topic.id, topicName: topic.name })}
             >

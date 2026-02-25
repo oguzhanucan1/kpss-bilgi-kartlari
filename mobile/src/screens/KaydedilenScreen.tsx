@@ -147,6 +147,7 @@ export default function KaydedilenScreen() {
           return (
             <Pressable
               key={row.id}
+              android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
               style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
               onPress={() => topicId && openTopic(topicId, topicName, row.flash_card_id)}
             >

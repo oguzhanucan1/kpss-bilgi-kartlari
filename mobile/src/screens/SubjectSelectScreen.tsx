@@ -122,7 +122,7 @@ export default function SubjectSelectScreen({ navigation }: Props) {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Pressable onPress={goToProfil} style={styles.avatarWrap}>
+            <Pressable android_ripple={{ color: 'rgba(0,0,0,0.1)' }} onPress={goToProfil} style={styles.avatarWrap}>
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>{initials}</Text>
               </View>
@@ -165,6 +165,7 @@ export default function SubjectSelectScreen({ navigation }: Props) {
             return (
               <Pressable
                 key={item.id}
+                android_ripple={{ color: 'rgba(0,0,0,0.08)' }}
                 style={({ pressed }) => [styles.card, styles.cardHalf, { backgroundColor: theme.bg, width: CARD_WIDTH }, pressed && styles.cardPressed]}
                 onPress={() => navigation.navigate('TopicSelect', { subjectId: item.id, subjectName: item.name })}
               >

@@ -73,16 +73,33 @@ export default function PushNotifications() {
     if (!supabase) return;
     setSending(true);
     try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        const msg = userError?.message ?? '';
+        if (msg.includes('refresh') || msg.includes('token') || msg.includes('session') || userError?.status === 400) {
+          throw new Error('Oturum sona erdi. Lütfen çıkış yapıp tekrar giriş yapın.');
+        }
+        throw new Error('Oturum bulunamadı. Giriş yapın.');
+      }
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('Oturum bulunamadı.');
-      const url = '/.netlify/functions/send-push';
-      const res = await fetch(url, {
+
+      const pushApiUrl = import.meta.env.VITE_PUSH_API_URL?.trim() || '/.netlify/functions/send-push';
+      const res = await fetch(pushApiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ title: title.trim() || 'Bildirim', body: body.trim() }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error((data as { error?: string }).error || res.statusText || 'Gönderilemedi.');
+      if (!res.ok) {
+        if (res.status === 404) {
+          throw new Error('Bildirim API bulunamadı (404). Netlify\'da deploy edin veya .env\'e VITE_PUSH_API_URL=https://PROJE_REF.supabase.co/functions/v1/send-push ekleyin.');
+        }
+        if (res.status === 401 || (data as { error?: string }).error?.toLowerCase().includes('oturum')) {
+          throw new Error('Oturum sona erdi. Lütfen çıkış yapıp tekrar giriş yapın.');
+        }
+        throw new Error((data as { error?: string }).error || res.statusText || 'Gönderilemedi.');
+      }
       const err = (data as { error?: string }).error;
       if (err) throw new Error(err);
       const sent = (data as { sent?: number }).sent ?? 0;
@@ -92,7 +109,9 @@ export default function PushNotifications() {
       setBody('');
       loadLogs();
     } catch (err) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Gönderilemedi.' });
+      const msg = err instanceof Error ? err.message : String(err);
+      const isAuthError = /refresh|token|session|invalid|not found/i.test(msg) || (err && typeof err === 'object' && 'status' in err && (err as { status: number }).status === 400);
+      setMessage({ type: 'error', text: isAuthError ? 'Oturum sona erdi. Lütfen çıkış yapıp tekrar giriş yapın.' : msg });
     } finally {
       setSending(false);
     }
