@@ -9,6 +9,24 @@ import { APP_THEME } from '../theme';
 
 const MAX_FORM_WIDTH = 400;
 
+/** Supabase/auth hata mesajlarını kullanıcı dostu Türkçe metne çevirir */
+function getLoginErrorMessage(error: Error): string {
+  const msg = (error?.message || '').toLowerCase();
+  if (msg.includes('invalid login') || msg.includes('invalid_credentials') || msg.includes('invalid login credentials')) {
+    return 'E-posta veya şifre hatalı. Lütfen kontrol edip tekrar deneyin.';
+  }
+  if (msg.includes('email not confirmed') || msg.includes('email_not_confirmed')) {
+    return 'E-posta adresinizi doğrulayın. Gelen kutunuzu ve istenmeyen klasörünü kontrol edin.';
+  }
+  if (msg.includes('rate limit') || msg.includes('rate_limit') || msg.includes('too many')) {
+    return 'Çok fazla deneme. Lütfen bir süre sonra tekrar deneyin.';
+  }
+  if (msg.includes('network') || msg.includes('fetch')) {
+    return 'İnternet bağlantınızı kontrol edin.';
+  }
+  return error?.message || 'Giriş yapılamadı. Lütfen bilgilerinizi kontrol edin.';
+}
+
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export default function LoginScreen({ navigation }: Props) {
@@ -20,11 +38,18 @@ export default function LoginScreen({ navigation }: Props) {
   const [secureText, setSecureText] = useState(true);
 
   const handleLogin = async () => {
-    if (!email.trim() || !password) { Alert.alert('Hata', 'E-posta ve şifre girin.'); return; }
+    if (!email.trim()) {
+      Alert.alert('Eksik bilgi', 'E-posta adresinizi girin.');
+      return;
+    }
+    if (!password) {
+      Alert.alert('Eksik bilgi', 'Şifrenizi girin.');
+      return;
+    }
     setLoading(true);
     const { error } = await signIn(email.trim(), password);
     setLoading(false);
-    if (error) Alert.alert('Giriş hatası', error.message);
+    if (error) Alert.alert('Giriş yapılamadı', getLoginErrorMessage(error));
   };
 
   return (
@@ -41,8 +66,8 @@ export default function LoginScreen({ navigation }: Props) {
         <IconButton icon="arrow-left" size={24} onPress={() => navigation.goBack()} style={styles.backBtn} iconColor={APP_THEME.text} />
 
         <View style={styles.headingWrap}>
-          <Text style={styles.pageTitle}>Hoş Geldin</Text>
-          <Text style={styles.subtitle}>Hesabına giriş yap</Text>
+          <Text style={styles.pageTitle}>Üye Giriş</Text>
+          <Text style={styles.subtitle}>E-posta ve şifre ile hesabına giriş yap</Text>
         </View>
 
         <View style={styles.formWrap}>
@@ -53,7 +78,9 @@ export default function LoginScreen({ navigation }: Props) {
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
+              autoCorrect={false}
               keyboardType="email-address"
+              textContentType="emailAddress"
               disabled={loading}
               placeholder="ornek@email.com"
               style={styles.input}
@@ -68,8 +95,9 @@ export default function LoginScreen({ navigation }: Props) {
               value={password}
               onChangeText={setPassword}
               secureTextEntry={secureText}
+              textContentType="password"
               disabled={loading}
-              placeholder="Şifreniz"
+              placeholder="Şifrenizi girin"
               style={styles.input}
               left={<TextInput.Icon icon="lock-outline" />}
               right={<TextInput.Icon icon={secureText ? 'eye-off-outline' : 'eye-outline'} onPress={() => setSecureText(!secureText)} />}

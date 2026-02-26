@@ -27,17 +27,20 @@ export default function RegisterScreen({ navigation }: Props) {
     const { error } = await signUp(email.trim(), password, fullName.trim() || undefined);
     setLoading(false);
     if (error) {
-      const msg = error.message.toLowerCase();
-      const isRateLimit = msg.includes('rate limit') || msg.includes('rate_limit');
+      const msg = (error.message || '').toLowerCase();
       let body = error.message;
-      if (isRateLimit) {
-        body = 'Çok fazla deneme. Lütfen 1 saat sonra tekrar deneyin. Supabase Dashboard → Authentication → Providers → Email bölümünden "Confirm email"i kapatırsanız e-posta limiti oluşmaz.';
-      } else if (msg.includes('duplicate') || msg.includes('unique') || msg.includes('23505')) {
+      if (msg.includes('rate limit') || msg.includes('rate_limit') || msg.includes('too many')) {
+        body = 'Çok fazla deneme. Lütfen bir süre sonra tekrar deneyin.';
+      } else if (msg.includes('duplicate') || msg.includes('unique') || msg.includes('23505') || msg.includes('already registered')) {
         body = 'Bu e-posta adresi zaten kayıtlı. Giriş yapmayı deneyin.';
       } else if (msg.includes('signup') || msg.includes('sign_up') || msg.includes('insert') || msg.includes('profiles')) {
-        body = 'Kayıt sırasında bir hata oluştu. Lütfen Supabase projenizde "supabase-fix-register-trigger.sql" dosyasını SQL Editor\'da çalıştırın.';
+        body = 'Kayıt sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyin.';
+      } else if (msg.includes('network') || msg.includes('fetch')) {
+        body = 'İnternet bağlantınızı kontrol edin.';
+      } else if (msg.includes('password') || msg.includes('weak')) {
+        body = 'Şifre yeterince güçlü değil. En az 6 karakter kullanın.';
       }
-      Alert.alert('Kayıt hatası', body);
+      Alert.alert('Kayıt yapılamadı', body);
     } else {
       Alert.alert('Başarılı', 'Hesabınız oluşturuldu.');
     }

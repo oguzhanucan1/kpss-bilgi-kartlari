@@ -1,9 +1,8 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React from 'react';
 import { View, StyleSheet, StatusBar, ScrollView, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Button, Text } from 'react-native-paper';
-import { Video, ResizeMode } from 'expo-av';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation/types';
@@ -13,38 +12,18 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Welcome'>;
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
+// Tasarıma uygun arka plan: tema primary ile uyumlu mor tonları
+const WELCOME_GRADIENT = ['#4C1D95', APP_THEME.primary, '#5B21B6', '#4C1D95'] as const;
+
 export default function WelcomeScreen({ navigation }: Props) {
-  const videoRef = useRef<Video>(null);
-  const [videoError, setVideoError] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      videoRef.current?.playAsync().catch(() => setVideoError(true));
-    }, 100);
-    return () => clearTimeout(t);
-  }, []);
-
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      {!videoError ? (
-        <Video
-          ref={videoRef}
-          source={require('../../assets/videos/welcome-bg.mp4')}
-          style={styles.video}
-          resizeMode={ResizeMode.COVER}
-          isLooping
-          isMuted
-          shouldPlay
-          onError={() => setVideoError(true)}
-        />
-      ) : (
-        <LinearGradient colors={['#1a0a2e', '#2d1b4e', '#1a0a2e']} style={StyleSheet.absoluteFillObject} />
-      )}
+      <LinearGradient colors={[...WELCOME_GRADIENT]} style={StyleSheet.absoluteFillObject} />
       <LinearGradient
-        colors={['transparent', 'transparent', 'rgba(0,0,0,0.6)', 'rgba(0,0,0,0.8)']}
+        colors={['transparent', 'transparent', 'rgba(0,0,0,0.4)', 'rgba(0,0,0,0.75)']}
         style={styles.overlay}
-        locations={[0, 0.32, 0.55, 1]}
+        locations={[0, 0.35, 0.6, 1]}
       />
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScrollView
@@ -93,12 +72,7 @@ export default function WelcomeScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  video: {
-    ...StyleSheet.absoluteFillObject,
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
-  },
+  container: { flex: 1, backgroundColor: '#4C1D95' },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     width: SCREEN_WIDTH,

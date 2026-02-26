@@ -1,13 +1,14 @@
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { supabase } from './supabase';
 
-/** Expo push token alır ve Supabase push_tokens tablosuna kaydeder. */
+/** Expo Go'da push bildirimleri desteklenmez (SDK 53+). Development build kullanın. */
 export async function registerPushTokenForUser(userId: string): Promise<boolean> {
   if (!supabase || !Device.isDevice) return false;
+  if (Constants.appOwnership === 'expo') return false; // Expo Go – push devre dışı
 
+  const Notifications = await import('expo-notifications');
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
   if (existingStatus !== 'granted') {
