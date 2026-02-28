@@ -41,4 +41,10 @@
   .rich-editor-wrap .ql-editor {
     min-height: 120px;
   }
+  .rich-editor-wrap .ql-editor.ql-blank::before {
+    font-style: normal;
+  }
+  .rich-editor-wrap .ql-size-small { font-size: 0.75em; }
+  .rich-editor-wrap .ql-size-large { font-size: 1.25em; }
+  .rich-editor-wrap .ql-size-huge { font-size: 1.5em; }
 }

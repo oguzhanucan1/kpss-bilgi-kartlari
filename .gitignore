@@ -4,6 +4,8 @@ node_modules/
 *.env
 !*.env.example
 admin/dist/
+admin/ftp-upload.ps1
+admin/FTP-YUKLEME.txt
 
 # İç içe repo – bu klasörü atla (içindeki .git yüzünden sorun çıkıyor)
 kpss-bilgi-kartlari/

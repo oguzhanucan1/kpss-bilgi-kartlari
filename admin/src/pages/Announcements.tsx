@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { RichTextEditor } from '../components/RichTextEditor';
 
 type Ann = { id: string; title: string; excerpt: string | null; body: string | null; is_active: boolean; created_at: string };
 
@@ -54,8 +55,8 @@ export default function Announcements() {
         <h2 className="mb-4 text-lg font-semibold text-bgray-900 dark:text-white">{editing ? 'Duyuruyu düzenle' : 'Yeni duyuru'}</h2>
         <form onSubmit={save} className="space-y-4">
           <div><label className="mb-1 block text-sm font-medium text-bgray-700 dark:text-bgray-50">Başlık</label><input className="input-field max-w-full" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} required placeholder="Duyuru başlığı" /></div>
-          <div><label className="mb-1 block text-sm font-medium text-bgray-700 dark:text-bgray-50">Özet (kısa metin)</label><textarea className="input-field max-w-full min-h-[60px]" value={form.excerpt} onChange={(e) => setForm((f) => ({ ...f, excerpt: e.target.value }))} rows={2} placeholder="Listede görünecek kısa metin" /></div>
-          <div><label className="mb-1 block text-sm font-medium text-bgray-700 dark:text-bgray-50">İçerik (opsiyonel)</label><textarea className="input-field max-w-full min-h-[100px]" value={form.body} onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))} rows={4} placeholder="Detaylı metin" /></div>
+          <div><label className="mb-1 block text-sm font-medium text-bgray-700 dark:text-bgray-50">Özet (kısa metin)</label><RichTextEditor key={`excerpt-${editing?.id ?? 'new'}`} value={form.excerpt} onChange={(v) => setForm((f) => ({ ...f, excerpt: v }))} placeholder="Listede görünecek kısa metin" height={100} /></div>
+          <div><label className="mb-1 block text-sm font-medium text-bgray-700 dark:text-bgray-50">İçerik (opsiyonel)</label><RichTextEditor key={`body-${editing?.id ?? 'new'}`} value={form.body} onChange={(v) => setForm((f) => ({ ...f, body: v }))} placeholder="Detaylı metin" height={180} /></div>
           <div><label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-bgray-700 dark:text-bgray-50"><input type="checkbox" checked={form.is_active} onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))} /> Aktif (anasayfada gösterilsin)</label></div>
           <div className="flex gap-2"><button type="submit" className="btn-primary">{editing ? 'Kaydet' : 'Ekle'}</button>{editing && <button type="button" className="btn-secondary" onClick={() => { setEditing(null); setForm({ title: '', excerpt: '', body: '', is_active: true }); }}>İptal</button>}</div>
         </form>

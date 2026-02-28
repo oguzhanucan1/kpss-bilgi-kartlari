@@ -1,8 +1,7 @@
-import { useEffect, useState, useRef } from 'react';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
+import { RichTextEditor } from '../components/RichTextEditor';
 
 type BulkRow = { content: string; title?: string; sort_order: number };
 
@@ -10,9 +9,7 @@ type Subject = { id: string; name: string };
 type Topic = { id: string; name: string; subject_id: string };
 type Card = { id: string; topic_id: string; title: string | null; content: string; sort_order: number };
 
-const modules = {
-  toolbar: [['bold', 'italic', 'underline'], [{ list: 'ordered' }, { list: 'bullet' }], ['link'], ['clean']],
-};
+const CARD_IMAGES_BUCKET = 'card-images';
 
 const EXAMPLE_HEADERS = ['içerik', 'başlık', 'sıra'];
 
@@ -43,6 +40,19 @@ export default function Cards() {
   const [bulkPreview, setBulkPreview] = useState<BulkRow[]>([]);
   const [bulkLoading, setBulkLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = useCallback(async (file: File): Promise<string> => {
+    if (!supabase) throw new Error('Supabase bağlantısı yok.');
+    const ext = file.name.split('.').pop() || 'jpg';
+    const path = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`;
+    const { error } = await supabase.storage.from(CARD_IMAGES_BUCKET).upload(path, file, {
+      cacheControl: '3600',
+      upsert: false,
+    });
+    if (error) throw error;
+    const { data } = supabase.storage.from(CARD_IMAGES_BUCKET).getPublicUrl(path);
+    return data.publicUrl;
+  }, []);
 
   const loadSubjects = async () => {
     if (!supabase) return;
@@ -200,7 +210,20 @@ export default function Cards() {
             <h2 className="mb-4 text-lg font-semibold text-bgray-900 dark:text-white">{editing ? 'Kartı düzenle' : 'Yeni kart ekle'}</h2>
             <form onSubmit={save} className="space-y-4">
               <div><label className="mb-1 block text-sm font-medium text-bgray-700 dark:text-bgray-50">Başlık (opsiyonel)</label><input className="input-field max-w-full" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="Kart başlığı" /></div>
-              <div><span className="mb-1 block text-sm font-semibold text-bgray-700 dark:text-bgray-50">Kart içeriği</span><div className="rich-editor-wrap max-w-3xl"><ReactQuill theme="snow" value={form.content} onChange={(v) => setForm((f) => ({ ...f, content: v }))} modules={modules} placeholder="Kart metni..." /></div></div>
+              <div>
+                <span className="mb-1 block text-sm font-semibold text-bgray-700 dark:text-bgray-50">Kart içeriği</span>
+                <p className="mb-1 text-xs text-bgray-500 dark:text-bgray-50">Renk, kalınlık, resim ve liste kullanabilirsiniz. Türkçe karakterler desteklenir. Boşluklar ve satır sonları uygulamada korunur.</p>
+                <div className="max-w-3xl">
+                  <RichTextEditor
+                    key={editing?.id ?? 'new'}
+                    value={form.content}
+                    onChange={(v) => setForm((f) => ({ ...f, content: v }))}
+                    placeholder="Kart metni... (Türkçe: ğüşıöç ĞÜŞİÖÇ)"
+                    height={260}
+                    onImageUpload={handleImageUpload}
+                  />
+                </div>
+              </div>
               <div><label className="mb-1 block text-sm font-medium text-bgray-700 dark:text-bgray-50">Sıra</label><input className="input-field w-28" type="number" value={form.sort_order} onChange={(e) => setForm((f) => ({ ...f, sort_order: Number(e.target.value) || 0 }))} /></div>
               <div className="flex gap-2"><button type="submit" className="btn-primary">{editing ? 'Kaydet' : 'Ekle'}</button>{editing && <button type="button" className="btn-secondary" onClick={() => { setEditing(null); setForm({ title: '', content: '', sort_order: 0 }); }}>İptal</button>}</div>
             </form>

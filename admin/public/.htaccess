@@ -1,0 +1,10 @@
+# SPA: Tüm istekleri index.html'e yönlendir (React Router)
+# Alt klasör (örn. /kpss/) için RewriteBase aynı klasör olmali
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /kpss/
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /kpss/index.html [L]
+</IfModule>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { RichTextEditor } from '../components/RichTextEditor';
 
 type Quote = { id: string; text: string; sort_order: number; is_active: boolean };
 
@@ -54,7 +55,7 @@ export default function Motivation() {
       <div className="card-bankco mb-6">
         <h2 className="mb-4 text-lg font-semibold text-bgray-900 dark:text-white">{editing ? 'Sözü düzenle' : 'Yeni söz ekle'}</h2>
         <form onSubmit={save} className="space-y-4">
-          <div><label className="mb-1 block text-sm font-medium text-bgray-700 dark:text-bgray-50">Metin</label><textarea className="input-field max-w-full min-h-[80px]" value={form.text} onChange={(e) => setForm((f) => ({ ...f, text: e.target.value }))} required placeholder="Motivasyon sözü" rows={3} /></div>
+          <div><label className="mb-1 block text-sm font-medium text-bgray-700 dark:text-bgray-50">Metin</label><RichTextEditor key={editing?.id ?? 'new'} value={form.text} onChange={(v) => setForm((f) => ({ ...f, text: v }))} placeholder="Motivasyon sözü" height={120} /></div>
           <div><label className="mb-1 block text-sm font-medium text-bgray-700 dark:text-bgray-50">Sıra</label><input className="input-field w-28" type="number" value={form.sort_order} onChange={(e) => setForm((f) => ({ ...f, sort_order: Number(e.target.value) || 0 }))} /></div>
           <div><label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-bgray-700 dark:text-bgray-50"><input type="checkbox" checked={form.is_active} onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))} /> Aktif (anasayfada gösterilsin)</label></div>
           <div className="flex gap-2"><button type="submit" className="btn-primary">{editing ? 'Kaydet' : 'Ekle'}</button>{editing && <button type="button" className="btn-secondary" onClick={() => { setEditing(null); setForm({ text: '', sort_order: 0, is_active: true }); }}>İptal</button>}</div>
